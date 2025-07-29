@@ -1,0 +1,7 @@
+{
+  "javascript.implicitProjectConfig.checkJs": true,
+  "javascript.implicitProjectConfig.experimentalDecorators": true,
+  "js/ts.implicitProjectConfig.module": "ESNext",
+  "js/ts.implicitProjectConfig.target": "ES6",
+  "js/ts.implicitProjectConfig.checkJs": true
+}
