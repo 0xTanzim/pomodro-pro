@@ -17,7 +17,7 @@ export default function App(): React.JSX.Element {
   };
 
   return (
-    <div className="h-[760px] w-[520px] bg-background text-foreground">
+    <div className="h-[600px] w-[520px] bg-background text-foreground">
       <Card className="h-full flex flex-col">
         {/* Header - Reduced size */}
         <div className="flex items-center justify-between p-2 border-b">

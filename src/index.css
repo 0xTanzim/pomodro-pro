@@ -79,7 +79,7 @@ body {
 /* Popup specific styles */
 body.popup {
   width: 520px;
-  height: 760px;
+  height: 600px;
   overflow: hidden;
 }
 
