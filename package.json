@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "vite",
+   "watch": "vite build --watch",
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",

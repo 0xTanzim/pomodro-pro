@@ -121,9 +121,11 @@ export default function Timer(): React.JSX.Element {
       {/* Main Timer Card */}
       <Card className="p-4 border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
         <div className="flex items-center justify-between">
+
+
           {/* Left side - Timer Display */}
-          <div className="flex-1 flex justify-center">
-            <div className="relative w-36 h-36">
+          <div className="flex-1 flex justify-center mr-14">
+            <div className="relative w-40 h-40">
               <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
                 {/* Background circle */}
                 <circle
@@ -176,20 +178,23 @@ export default function Timer(): React.JSX.Element {
 
           {/* Right side - Mode Info */}
           <div className="flex flex-col items-center justify-center ml-4">
-            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg mb-2`}>
-              <IconComponent className="w-5 h-5 text-white" />
+            <div className="flex items-center gap-2 mb-2">
+              <div className={`w-8 h-8 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg`}>
+                <IconComponent className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-base font-bold text-gray-800 dark:text-gray-100">
+                {modeConfig.title}
+              </h2>
             </div>
-            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1 text-center">
-              {modeConfig.title}
-            </h2>
             <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
               {modeConfig.subtitle}
             </p>
           </div>
+
         </div>
 
         {/* Control buttons */}
-        <div className="flex gap-3 justify-center mt-4">
+        <div className="flex gap-3 justify-start mt-4 pl-8">
           <Button
             size="lg"
             onClick={handleStartPause}
