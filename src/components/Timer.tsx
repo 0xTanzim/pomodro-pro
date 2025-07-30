@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTimerStore } from "@/store/timerStore";
-import { Clock, Coffee, Pause, Play, RotateCcw, Star, Target, TrendingUp, Zap } from "lucide-react";
+import { Clock, Coffee, Pause, Play, RotateCcw, Target, TrendingUp, Zap } from "lucide-react";
 import React, { useCallback, useEffect, useMemo } from "react";
 
 export default function Timer(): React.JSX.Element {
@@ -117,109 +117,83 @@ export default function Timer(): React.JSX.Element {
   }
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 flex items-center justify-center">
-            <Target className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">Pomodoro Pro</h1>
-            <p className="text-xs text-gray-600 dark:text-gray-400">Boost your productivity</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1 text-yellow-500">
-            <Star className="w-4 h-4" />
-            <Star className="w-4 h-4" />
-            <Star className="w-4 h-4" />
-          </div>
-          <span className="text-sm font-medium text-green-600">Rate now</span>
-        </div>
-      </div>
-
+    <div className="h-full flex flex-col space-y-3">
       {/* Main Timer Card */}
-      <Card className="p-6 border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
-        {/* Mode Header */}
-        <div className="text-center mb-4">
-          <div className="flex items-center justify-center mb-3">
-            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg`}>
-              <IconComponent className="w-6 h-6 text-white" />
+      <Card className="p-4 border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
+        <div className="flex items-center justify-between">
+          {/* Left side - Timer Display */}
+          <div className="flex-1 flex justify-center">
+            <div className="relative w-36 h-36">
+              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                {/* Background circle */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke="rgba(156, 163, 175, 0.2)"
+                  strokeWidth="3"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke={`url(#gradient-${state.mode})`}
+                  strokeWidth="3"
+                  strokeDasharray={`${2 * Math.PI * 40}`}
+                  strokeDashoffset={`${2 * Math.PI * 40 * (1 - progress / 100)}`}
+                  strokeLinecap="round"
+                  className="transition-all duration-1000 ease-out drop-shadow-lg"
+                />
+                {/* Gradient definitions */}
+                <defs>
+                  <linearGradient id="gradient-focus" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                  <linearGradient id="gradient-short_break" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#0891b2" />
+                  </linearGradient>
+                  <linearGradient id="gradient-long_break" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#8b5cf6" />
+                    <stop offset="100%" stopColor="#ec4899" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center">
+                <div className="text-4xl font-bold text-gray-800 dark:text-gray-100 tracking-wider mb-1">
+                  {timeString}
+                </div>
+                <div className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+                  {Math.round(progress)}% Complete
+                </div>
+              </div>
             </div>
           </div>
-          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">
-            {modeConfig.title}
-          </h2>
-          <p className="text-xs text-gray-600 dark:text-gray-400">
-            {modeConfig.subtitle}
-          </p>
-        </div>
 
-        {/* Timer Display */}
-        <div className="relative w-32 h-32 mx-auto mb-4">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            {/* Background circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              stroke="rgba(156, 163, 175, 0.2)"
-              strokeWidth="3"
-            />
-            {/* Progress circle */}
-            <circle
-              cx="50"
-              cy="50"
-              r="40"
-              fill="none"
-              stroke={`url(#gradient-${state.mode})`}
-              strokeWidth="3"
-              strokeDasharray={`${2 * Math.PI * 40}`}
-              strokeDashoffset={`${2 * Math.PI * 40 * (1 - progress / 100)}`}
-              strokeLinecap="round"
-              className="transition-all duration-1000 ease-out drop-shadow-lg"
-            />
-            {/* Gradient definitions */}
-            <defs>
-              <linearGradient id="gradient-focus" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#10b981" />
-                <stop offset="100%" stopColor="#059669" />
-              </linearGradient>
-              <linearGradient id="gradient-short_break" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#3b82f6" />
-                <stop offset="100%" stopColor="#0891b2" />
-              </linearGradient>
-              <linearGradient id="gradient-long_break" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#8b5cf6" />
-                <stop offset="100%" stopColor="#ec4899" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 tracking-wider mb-1">
-              {timeString}
+          {/* Right side - Mode Info */}
+          <div className="flex flex-col items-center justify-center ml-4">
+            <div className={`w-10 h-10 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg mb-2`}>
+              <IconComponent className="w-5 h-5 text-white" />
             </div>
-            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-              {Math.round(progress)}% Complete
-            </div>
-          </div>
-        </div>
-
-        {/* Ready? Start! Text */}
-        <div className="text-center mb-4">
-          <div className="text-lg font-semibold text-green-600 mb-1">
-            Ready? Start! 🚀
+            <h2 className="text-sm font-bold text-gray-800 dark:text-gray-100 mb-1 text-center">
+              {modeConfig.title}
+            </h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
+              {modeConfig.subtitle}
+            </p>
           </div>
         </div>
 
         {/* Control buttons */}
-        <div className="flex gap-3 justify-center">
+        <div className="flex gap-3 justify-center mt-4">
           <Button
-            size="sm"
+            size="lg"
             onClick={handleStartPause}
-            className={`px-6 py-2 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
+            className={`px-6 py-3 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
               state.isRunning
                 ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
                 : `bg-gradient-to-r ${modeConfig.gradient} hover:shadow-xl text-white`
@@ -227,23 +201,23 @@ export default function Timer(): React.JSX.Element {
           >
             {state.isRunning ? (
               <>
-                <Pause className="w-4 h-4 mr-2" />
+                <Pause className="w-5 h-5 mr-2" />
                 Pause
               </>
             ) : (
               <>
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="w-5 h-5 mr-2" />
                 Start
               </>
             )}
           </Button>
           <Button
-            size="sm"
+            size="lg"
             variant="outline"
             onClick={handleReset}
-            className="px-6 py-2 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg"
+            className="px-6 py-3 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg"
           >
-            <RotateCcw className="w-4 h-4 mr-2" />
+            <RotateCcw className="w-5 h-5 mr-2" />
             Reset
           </Button>
         </div>
@@ -251,7 +225,7 @@ export default function Timer(): React.JSX.Element {
 
       {/* Stats Section */}
       <div className="text-center">
-        <div className="text-2xl font-bold text-green-600 mb-1">
+        <div className="text-2xl font-bold text-green-600 mb-2">
           {state.todos.length}
         </div>
         <div className="text-sm text-green-600 font-medium">Todos</div>
@@ -261,15 +235,15 @@ export default function Timer(): React.JSX.Element {
         <div className="flex justify-center gap-8">
           <div>
             <div className="text-xl font-bold text-green-600">{state.pomodoros}</div>
-            <div className="text-xs text-green-600">Pomodoro</div>
+            <div className="text-sm text-green-600">Pomodoro</div>
           </div>
           <div className="border-l border-gray-200 dark:border-gray-700 pl-8">
             <div className="text-xl font-bold text-green-600">{state.focusSeconds}</div>
-            <div className="text-xs text-green-600">secs Focus</div>
+            <div className="text-sm text-green-600">secs Focus</div>
           </div>
         </div>
 
-        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+        <div className="text-sm text-gray-500 dark:text-gray-400 mt-3">
           This updates every time the time runs out
         </div>
       </div>
@@ -284,9 +258,6 @@ export default function Timer(): React.JSX.Element {
         </div>
         <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
           <TrendingUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-        </div>
-        <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-          <Star className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </div>
       </div>
     </div>

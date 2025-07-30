@@ -73,18 +73,18 @@ body {
 #root {
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Popup specific styles */
 body.popup {
-  width: 400px;
-  height: 600px;
+  width: 520px;
+  height: 760px;
   overflow: hidden;
 }
 
 body.popup #root {
-  overflow: auto;
+  overflow: hidden;
 }
 
 /* Options page specific styles */
