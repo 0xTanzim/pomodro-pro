@@ -1,13 +1,23 @@
-import ThemeToggle from "@/components/ThemeToggle";
-import Timer from "@/components/Timer";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TaskList } from "@/features/tasks/components/TaskList";
-import { BarChart3, Clock, Settings, Target, TrendingUp } from "lucide-react";
-import React from "react";
+import ThemeToggle from '@/components/ThemeToggle';
+import Timer from '@/components/Timer';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { TaskList } from '@/features/tasks/components/TaskList';
+import { usePopupSize } from '@/hooks/usePopupSize';
+import { BarChart3, Clock, Settings, Target, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
 
 export default function App(): React.JSX.Element {
+  const [activeTab, setActiveTab] = useState('timer');
+  const popupSize = usePopupSize({ isTasksActive: activeTab === 'tasks' });
+
   const openReport = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('report.html') });
   };
@@ -16,10 +26,20 @@ export default function App(): React.JSX.Element {
     chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
   };
 
+  const openTasks = () => {
+    chrome.tabs.create({ url: chrome.runtime.getURL('task.html') });
+  };
+
   return (
-    <div className="h-[600px] w-[520px] bg-background text-foreground">
+    <div
+      className="bg-background text-foreground"
+      style={{
+        height: `${popupSize.height}px`,
+        width: `${popupSize.width}px`
+      }}
+    >
       <Card className="h-full flex flex-col">
-        {/* Header - Reduced size */}
+        {/* Header  */}
         <div className="flex items-center justify-between p-2 border-b">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 flex items-center justify-center">
@@ -27,7 +47,9 @@ export default function App(): React.JSX.Element {
             </div>
             <div>
               <h1 className="text-base font-bold">Pomodoro Pro</h1>
-              <p className="text-xs text-muted-foreground">Boost your productivity</p>
+              <p className="text-xs text-muted-foreground">
+                Boost your productivity
+              </p>
             </div>
           </div>
           <ThemeToggle />
@@ -35,7 +57,11 @@ export default function App(): React.JSX.Element {
 
         {/* Main Content - More space */}
         <div className="flex-1 p-3 overflow-hidden">
-          <Tabs defaultValue="timer" className="h-full flex flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="h-full flex flex-col"
+          >
             <TabsList className="grid w-full grid-cols-3 mb-2">
               <TabsTrigger value="timer">Timer</TabsTrigger>
               <TabsTrigger value="tasks">Tasks</TabsTrigger>
@@ -58,7 +84,9 @@ export default function App(): React.JSX.Element {
                     <div className="flex items-center space-x-2">
                       <Clock className="h-4 w-4 text-blue-500" />
                       <div>
-                        <div className="text-xl font-bold text-blue-600">25</div>
+                        <div className="text-xl font-bold text-blue-600">
+                          25
+                        </div>
                         <div className="text-xs text-gray-500">Pomodoros</div>
                       </div>
                     </div>
@@ -67,7 +95,9 @@ export default function App(): React.JSX.Element {
                     <div className="flex items-center space-x-2">
                       <Target className="h-4 w-4 text-green-500" />
                       <div>
-                        <div className="text-xl font-bold text-green-600">12</div>
+                        <div className="text-xl font-bold text-green-600">
+                          12
+                        </div>
                         <div className="text-xs text-gray-500">Tasks Done</div>
                       </div>
                     </div>
@@ -90,7 +120,19 @@ export default function App(): React.JSX.Element {
                       <TrendingUp className="h-4 w-4 mr-2" />
                       Open Full Report
                     </Button>
-                    <Button onClick={openSettings} variant="outline" className="w-full text-sm">
+                    <Button
+                      onClick={openTasks}
+                      variant="outline"
+                      className="w-full text-sm"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Go to Tasks
+                    </Button>
+                    <Button
+                      onClick={openSettings}
+                      variant="outline"
+                      className="w-full text-sm"
+                    >
                       <Settings className="h-4 w-4 mr-2" />
                       Go to Settings
                     </Button>
@@ -106,19 +148,22 @@ export default function App(): React.JSX.Element {
                     <div className="flex items-start space-x-2">
                       <div className="w-2 h-2 bg-blue-500 rounded-full mt-1.5"></div>
                       <div className="text-xs">
-                        <span className="font-medium">Right-click</span> the extension icon to access report and settings
+                        <span className="font-medium">Right-click</span> the
+                        extension icon to access report and settings
                       </div>
                     </div>
                     <div className="flex items-start space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full mt-1.5"></div>
                       <div className="text-xs">
-                        <span className="font-medium">Track progress</span> with detailed analytics and charts
+                        <span className="font-medium">Track progress</span> with
+                        detailed analytics and charts
                       </div>
                     </div>
                     <div className="flex items-start space-x-2">
                       <div className="w-2 h-2 bg-purple-500 rounded-full mt-1.5"></div>
                       <div className="text-xs">
-                        <span className="font-medium">Customize settings</span> for priorities, projects, and notifications
+                        <span className="font-medium">Customize settings</span>{' '}
+                        for priorities, projects, and notifications
                       </div>
                     </div>
                   </CardContent>

@@ -1,6 +1,7 @@
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { useTimerStore } from "@/store/timerStore";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import React from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import Timer from "../Timer";
 
@@ -38,7 +39,9 @@ const mockChrome = {
 
 // Mock the timer store
 vi.mock("@/store/timerStore");
-const mockUseTimerStore = useTimerStore as vi.MockedFunction<typeof useTimerStore>;
+const mockUseTimerStore = useTimerStore as vi.MockedFunction<
+  typeof useTimerStore
+>;
 
 // Wrapper component for tests
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
@@ -75,7 +78,7 @@ describe("Timer Component", () => {
     vi.clearAllMocks();
 
     // Mock Chrome APIs globally
-    global.chrome = mockChrome as any;
+    global.chrome = mockChrome as unknown as typeof chrome;
 
     // Mock timer store
     mockUseTimerStore.mockReturnValue({
@@ -226,7 +229,7 @@ describe("Timer Component", () => {
   it("displays stats correctly", async () => {
     const mockStateWithTodos = {
       ...defaultMockState,
-      todos: [{ id: "1", text: "Test todo", completed: false } as any],
+      todos: [{ id: "1", text: "Test todo", completed: false }],
       pomodoros: 5,
       focusSeconds: 3600,
     };

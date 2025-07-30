@@ -13,6 +13,6 @@ export { TaskService } from './services/taskService';
 
 // Types
 export type {
-    Attachment, DailyAchievement, Subtask, Task, TaskFilter,
-    TaskSort, TaskStats
+  Attachment, DailyAchievement, Task, TaskFilter,
+  TaskSort, TaskStats
 } from './types/task';

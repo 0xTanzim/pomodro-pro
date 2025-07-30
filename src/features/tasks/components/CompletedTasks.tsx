@@ -5,16 +5,16 @@ import { TaskCard } from './TaskCard';
 
 interface CompletedTasksProps {
   tasks: Task[];
-  achievements: DailyAchievement[];
-  onToggle: (taskId: string) => void;
-  onDelete: (taskId: string) => void;
-  onEdit: (task: Task) => void;
-  onStartPomodoro: (task: Task) => void;
+  achievements?: DailyAchievement[];
+  onToggle?: (taskId: string) => void;
+  onDelete?: (taskId: string) => void;
+  onEdit?: (task: Task) => void;
+  onStartPomodoro?: (task: Task) => void;
 }
 
 export const CompletedTasks: React.FC<CompletedTasksProps> = ({
   tasks,
-  achievements,
+  achievements = [],
   onToggle,
   onDelete,
   onEdit,
@@ -34,7 +34,7 @@ export const CompletedTasks: React.FC<CompletedTasksProps> = ({
 
   // Get achievement for a specific date
   const getAchievement = (date: string): DailyAchievement | undefined => {
-    return achievements.find(achievement =>
+    return achievements?.find(achievement =>
       new Date(achievement.date).toDateString() === date
     );
   };
@@ -55,7 +55,7 @@ export const CompletedTasks: React.FC<CompletedTasksProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-h-96 overflow-y-auto">
       <div className="text-center">
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Completed</h2>
       </div>
@@ -83,10 +83,9 @@ export const CompletedTasks: React.FC<CompletedTasksProps> = ({
                 <TaskCard
                   key={task.id}
                   task={task}
-                  onToggle={onToggle}
-                  onDelete={onDelete}
-                  onEdit={onEdit}
-                  onStartPomodoro={onStartPomodoro}
+                  onEdit={onEdit ? () => onEdit(task) : () => {}}
+                  onDelete={onDelete ? () => onDelete(task.id) : () => {}}
+                  onToggleCompletion={onToggle ? () => onToggle(task.id) : () => {}}
                 />
               ))}
             </div>

@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Edit, Plus, Save, X } from "lucide-react";
 import React, { useEffect, useState } from "react";
-import { Subtask, Task } from "../types/task";
+import { Task } from "../types/task";
 
 interface TaskDetailModalProps {
   task: Task | null;
@@ -29,7 +29,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
-  const [newSubtask, setNewSubtask] = useState("");
+
   const [newTag, setNewTag] = useState("");
 
   useEffect(() => {
@@ -53,38 +53,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
     setIsEditing(false);
   };
 
-  const addSubtask = () => {
-    if (newSubtask.trim()) {
-      const subtask: Subtask = {
-        id: Date.now().toString(),
-        title: newSubtask.trim(),
-        completed: false,
-      };
-      setEditedTask(prev => prev ? {
-        ...prev,
-        subtasks: [...prev.subtasks, subtask]
-      } : null);
-      setNewSubtask("");
-    }
-  };
 
-  const toggleSubtask = (subtaskId: string) => {
-    setEditedTask(prev => prev ? {
-      ...prev,
-      subtasks: prev.subtasks.map(subtask =>
-        subtask.id === subtaskId
-          ? { ...subtask, completed: !subtask.completed }
-          : subtask
-      )
-    } : null);
-  };
-
-  const removeSubtask = (subtaskId: string) => {
-    setEditedTask(prev => prev ? {
-      ...prev,
-      subtasks: prev.subtasks.filter(subtask => subtask.id !== subtaskId)
-    } : null);
-  };
 
   const addTag = () => {
     if (newTag.trim() && !editedTask.tags.includes(newTag.trim())) {
@@ -175,7 +144,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                   <Label htmlFor="priority">Priority</Label>
                   <Select
                     value={editedTask.priority}
-                    onValueChange={(value) => setEditedTask(prev => prev ? { ...prev, priority: value } : null)}
+                    onValueChange={(value) => setEditedTask(prev => prev ? { ...prev, priority: value.toLowerCase() as Task['priority'] } : null)}
                     disabled={!isEditing}
                   >
                     <SelectTrigger>
@@ -183,7 +152,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     </SelectTrigger>
                     <SelectContent>
                       {priorities.map((priority) => (
-                        <SelectItem key={priority.id} value={priority.name}>
+                        <SelectItem key={priority.id} value={priority.name.toLowerCase()}>
                           <div className="flex items-center space-x-2">
                             <div
                               className="w-3 h-3 rounded-full"
@@ -226,12 +195,12 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="pomodoros">Pomodoros</Label>
+                  <Label htmlFor="pomodoroCount">Pomodoros</Label>
                   <Input
-                    id="pomodoros"
+                    id="pomodoroCount"
                     type="number"
-                    value={editedTask.pomodoros}
-                    onChange={(e) => setEditedTask(prev => prev ? { ...prev, pomodoros: parseInt(e.target.value) || 0 } : null)}
+                    value={editedTask.pomodoroCount}
+                    onChange={(e) => setEditedTask(prev => prev ? { ...prev, pomodoroCount: parseInt(e.target.value) || 0 } : null)}
                     disabled={!isEditing}
                   />
                 </div>
@@ -265,7 +234,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     value={editedTask.dueDate ? editedTask.dueDate.split('T')[0] : ''}
                     onChange={(e) => setEditedTask(prev => prev ? {
                       ...prev,
-                      dueDate: e.target.value ? new Date(e.target.value).toISOString() : null
+                      dueDate: e.target.value ? new Date(e.target.value).toISOString() : undefined
                     } : null)}
                     disabled={!isEditing}
                   />
@@ -279,7 +248,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                     value={editedTask.reminder ? editedTask.reminder.slice(0, 16) : ''}
                     onChange={(e) => setEditedTask(prev => prev ? {
                       ...prev,
-                      reminder: e.target.value ? new Date(e.target.value).toISOString() : null
+                      reminder: e.target.value ? new Date(e.target.value).toISOString() : undefined
                     } : null)}
                     disabled={!isEditing}
                   />
@@ -290,7 +259,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
                 <Label htmlFor="repeat">Repeat</Label>
                 <Select
                   value={editedTask.repeat}
-                  onValueChange={(value) => setEditedTask(prev => prev ? { ...prev, repeat: value } : null)}
+                  onValueChange={(value) => setEditedTask(prev => prev ? { ...prev, repeat: value as Task['repeat'] } : null)}
                   disabled={!isEditing}
                 >
                   <SelectTrigger>
@@ -307,57 +276,7 @@ export const TaskDetailModal: React.FC<TaskDetailModalProps> = ({
             </CardContent>
           </Card>
 
-          {/* Subtasks */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Subtasks</CardTitle>
-              <CardDescription>
-                Break down your task into smaller steps
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {isEditing && (
-                <div className="flex space-x-2">
-                  <Input
-                    placeholder="Add new subtask"
-                    value={newSubtask}
-                    onChange={(e) => setNewSubtask(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && addSubtask()}
-                  />
-                  <Button onClick={addSubtask} size="sm">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
 
-              <div className="space-y-2">
-                {editedTask.subtasks.map((subtask) => (
-                  <div key={subtask.id} className="flex items-center justify-between p-2 border rounded">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={subtask.completed}
-                        onChange={() => toggleSubtask(subtask.id)}
-                        disabled={!isEditing}
-                      />
-                      <span className={subtask.completed ? 'line-through text-gray-500' : ''}>
-                        {subtask.title}
-                      </span>
-                    </div>
-                    {isEditing && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeSubtask(subtask.id)}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Tags */}
           <Card>

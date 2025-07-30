@@ -11,19 +11,11 @@ export interface Task {
   pomodoroCount: number;
   completedPomodoros: number;
   tags: string[];
-  subtasks: Subtask[];
   attachments: Attachment[];
   notes?: string;
   createdAt: string;
   completedAt?: string;
   color: string;
-}
-
-export interface Subtask {
-  id: string;
-  title: string;
-  completed: boolean;
-  pomodoroCount: number;
 }
 
 export interface Attachment {

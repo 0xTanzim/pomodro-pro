@@ -10,11 +10,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 6,
     completedPomodoros: 0,
     tags: ['#Urgent', '#Work', '#Design'],
-    subtasks: [
-      { id: '1', title: 'Sketch initial concepts', completed: false, pomodoroCount: 2 },
-      { id: '2', title: 'Create vector icons', completed: false, pomodoroCount: 3 },
-      { id: '3', title: 'Design app screenshots', completed: false, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-red-500'
   },
@@ -27,10 +23,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 2,
     completedPomodoros: 0,
     tags: ['#Personal', '#Productive', '#Home'],
-    subtasks: [
-      { id: '4', title: 'Warm up exercises', completed: false, pomodoroCount: 1 },
-      { id: '5', title: 'Main workout routine', completed: false, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-green-500'
   },
@@ -43,11 +36,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 4,
     completedPomodoros: 0,
     tags: ['#Productive', '#Work', '#Important'],
-    subtasks: [
-      { id: '6', title: 'Research data', completed: false, pomodoroCount: 1 },
-      { id: '7', title: 'Write report draft', completed: false, pomodoroCount: 2 },
-      { id: '8', title: 'Create proposal', completed: false, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-purple-500'
   },
@@ -60,11 +49,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 5,
     completedPomodoros: 0,
     tags: ['#Important', '#Work', '#Study'],
-    subtasks: [
-      { id: '9', title: 'Review chapter 1-3', completed: false, pomodoroCount: 2 },
-      { id: '10', title: 'Practice problems', completed: false, pomodoroCount: 2 },
-      { id: '11', title: 'Create study notes', completed: false, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-green-500'
   },
@@ -77,10 +62,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 2,
     completedPomodoros: 2,
     tags: ['#Urgent', '#Work', '#Design'],
-    subtasks: [
-      { id: '12', title: 'Research competitors', completed: true, pomodoroCount: 1 },
-      { id: '13', title: 'Define core features', completed: true, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-red-500',
     completedAt: new Date().toISOString()
@@ -94,11 +76,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 3,
     completedPomodoros: 3,
     tags: ['#Research', '#Work', '#Productive'],
-    subtasks: [
-      { id: '14', title: 'Analyze competitors', completed: true, pomodoroCount: 1 },
-      { id: '15', title: 'Survey target audience', completed: true, pomodoroCount: 1 },
-      { id: '16', title: 'Write analysis report', completed: true, pomodoroCount: 1 }
-    ],
+
     attachments: [],
     color: 'bg-orange-500',
     completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Yesterday
@@ -112,10 +90,7 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 4,
     completedPomodoros: 4,
     tags: ['#Urgent', '#Work', '#Design'],
-    subtasks: [
-      { id: '17', title: 'Create user personas', completed: true, pomodoroCount: 2 },
-      { id: '18', title: 'Analyze user behavior', completed: true, pomodoroCount: 2 }
-    ],
+
     attachments: [],
     color: 'bg-red-500',
     completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Yesterday
@@ -129,7 +104,6 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 5,
     completedPomodoros: 5,
     tags: ['#Personal', '#Home'],
-    subtasks: [],
     attachments: [],
     color: 'bg-green-500',
     completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Yesterday
@@ -143,7 +117,6 @@ export const sampleTasks: Omit<Task, 'id' | 'createdAt'>[] = [
     pomodoroCount: 3,
     completedPomodoros: 3,
     tags: ['#Personal', '#Productive'],
-    subtasks: [],
     attachments: [],
     color: 'bg-purple-500',
     completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // Yesterday

@@ -1,7 +1,7 @@
 import { getFromStorage, setToStorage } from "@/lib/chromeStorage";
 import { DEFAULT_TIMER_STATE, TimerMode, TimerState } from "@/types/timer";
 
-// Initialize context menu for report page and settings
+// Initialize context menu for report page, settings, and tasks
 chrome.runtime.onInstalled.addListener(() => {
   chrome.contextMenus.create({
     id: 'go-to-report',
@@ -14,6 +14,12 @@ chrome.runtime.onInstalled.addListener(() => {
     title: 'Go to Settings',
     contexts: ['action']
   });
+
+  chrome.contextMenus.create({
+    id: 'go-to-tasks',
+    title: 'Go to Task Management',
+    contexts: ['action']
+  });
 });
 
 // Handle context menu clicks
@@ -24,6 +30,10 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
   if (info.menuItemId === 'go-to-settings') {
     chrome.tabs.create({ url: chrome.runtime.getURL('options.html') });
+  }
+
+  if (info.menuItemId === 'go-to-tasks') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('task.html') });
   }
 });
 
