@@ -1,10 +1,16 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import "../index.css";
-import Options from "./Options";
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { ThemeProvider } from '../contexts/ThemeContext'
+import '../index.css'
+import Options from './Options'
 
-ReactDOM.createRoot(document.getElementById("options-root")!).render(
+// Add options-page class to body for full page styling
+document.body.classList.add('options-page');
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <Options />
+    <ThemeProvider>
+      <Options />
+    </ThemeProvider>
   </React.StrictMode>,
-);
+)

@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useTaskStore } from "@/store/taskStore";
 import { Calendar, Clock, Edit, Plus, Star, Tag, Trash2, TrendingUp } from "lucide-react";
@@ -30,9 +30,10 @@ const priorityConfig = {
 } as const;
 
 export default function TaskList(): JSX.Element {
-  const { getFilteredTasks, toggleTask, deleteTask, addTask } = useTaskStore();
+  const { getFilteredTasks, toggleTask, deleteTask, addTask, updateTask } = useTaskStore();
   const tasks = getFilteredTasks();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<string | null>(null);
   const [newTaskName, setNewTaskName] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<"high" | "medium" | "low">("medium");
   const [newTaskTags, setNewTaskTags] = useState("");
@@ -40,12 +41,24 @@ export default function TaskList(): JSX.Element {
 
   const handleAddTask = (): void => {
     if (newTaskName.trim()) {
+      if (editingTask) {
+        // Update existing task
+        updateTask(editingTask, {
+          name: newTaskName.trim(),
+          priority: newTaskPriority,
+          tags: newTaskTags.split(",").map(tag => tag.trim()).filter(Boolean),
+          estimatedPomodoros: newTaskPomodoros,
+        });
+        setEditingTask(null);
+      } else {
+        // Add new task
       addTask({
         name: newTaskName.trim(),
         priority: newTaskPriority,
         tags: newTaskTags.split(",").map(tag => tag.trim()).filter(Boolean),
         estimatedPomodoros: newTaskPomodoros,
       });
+      }
       // Reset form
       setNewTaskName("");
       setNewTaskPriority("medium");
@@ -61,6 +74,16 @@ export default function TaskList(): JSX.Element {
     setNewTaskPriority("medium");
     setNewTaskTags("");
     setNewTaskPomodoros(1);
+    setEditingTask(null);
+  };
+
+  const handleEditTask = (task: any): void => {
+    setEditingTask(task.id);
+    setNewTaskName(task.name);
+    setNewTaskPriority(task.priority);
+    setNewTaskTags(task.tags.join(", "));
+    setNewTaskPomodoros(task.estimatedPomodoros);
+    setIsDialogOpen(true);
   };
 
   return (
@@ -79,8 +102,11 @@ export default function TaskList(): JSX.Element {
         <DialogContent className="sm:max-w-md bg-white dark:bg-gray-900 rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-              Create New Task
+              {editingTask ? "Edit Task" : "Create New Task"}
             </DialogTitle>
+            <DialogDescription className="text-gray-600 dark:text-gray-400">
+              Add a new task to your Pomodoro workflow. Set the priority, add tags, and estimate the number of Pomodoros needed.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-6">
             <div>
@@ -146,7 +172,7 @@ export default function TaskList(): JSX.Element {
                 onClick={handleAddTask}
                 className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-semibold py-3 rounded-xl shadow-lg transition-all duration-300 hover:scale-105"
               >
-                Create Task
+                {editingTask ? "Update Task" : "Create Task"}
               </Button>
               <Button
                 variant="outline"
@@ -164,7 +190,7 @@ export default function TaskList(): JSX.Element {
       </Dialog>
 
       {/* Task List */}
-      <div className="space-y-4 max-h-[350px] overflow-y-auto pr-2">
+      <div className="space-y-3 max-h-[350px] overflow-y-auto pr-2">
         {tasks.map((task) => {
           const taskPriorityConfig = priorityConfig[task.priority];
           const IconComponent = taskPriorityConfig.icon;
@@ -172,7 +198,7 @@ export default function TaskList(): JSX.Element {
           return (
             <Card
               key={task.id}
-              className={`p-5 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-2xl bg-gradient-to-br ${taskPriorityConfig.bgGradient}`}
+              className={`p-4 border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 rounded-xl bg-gradient-to-br ${taskPriorityConfig.bgGradient}`}
             >
               <div className="flex items-start gap-4">
                 <Checkbox
@@ -212,7 +238,12 @@ export default function TaskList(): JSX.Element {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-full transition-all duration-200">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleEditTask(task)}
+                    className="h-8 w-8 p-0 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950 rounded-full transition-all duration-200"
+                  >
                     <Edit className="h-4 w-4" />
                   </Button>
                   <Button

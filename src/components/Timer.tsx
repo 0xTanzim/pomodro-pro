@@ -1,172 +1,293 @@
-import { usePomodoroStore } from "@/store/pomodoroStore";
-import { useTimer } from "@/hooks/useTimer";
 import { Button } from "@/components/ui/button";
-import { Play, Pause, RotateCcw, Target, Coffee, Zap } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { useTheme } from "@/contexts/ThemeContext";
+import { useTimerStore } from "@/store/timerStore";
+import { Clock, Coffee, Pause, Play, RotateCcw, Star, Target, TrendingUp, Zap } from "lucide-react";
+import React, { useCallback, useEffect, useMemo } from "react";
 
-export default function Timer(): JSX.Element {
-  const { time, mode, isRunning, setIsRunning, reset } = usePomodoroStore();
-  useTimer();
+export default function Timer(): React.JSX.Element {
+  const { state, isLoading, loadState, startTimer, pauseTimer, resetTimer } = useTimerStore();
+  const { resolvedTheme } = useTheme();
 
-  // Ensure time is a valid number and format properly
-  const validTime = Math.max(0, Math.floor(time || 0));
-  const minutes = Math.floor(validTime / 60);
-  const seconds = (validTime % 60).toString().padStart(2, "0");
+  useEffect(() => {
+    loadState();
+  }, [loadState]);
 
-  const getCurrentDuration = (): number => {
-    switch (mode) {
-      case "focus": return 25 * 60;
-      case "short_break": return 5 * 60;
-      case "long_break": return 15 * 60;
-      default: return 25 * 60;
+  // Memoize time formatting to prevent unnecessary recalculations
+  const timeString = useMemo(() => {
+    if (!state) return "25:00";
+    const minutes = Math.floor(state.time / 60);
+    const seconds = state.time % 60;
+    return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }, [state?.time]);
+
+  // Memoize progress calculation
+  const progress = useMemo(() => {
+    if (!state) return 0;
+    const getCurrentDuration = (): number => {
+      switch (state.mode) {
+        case "focus": return 25 * 60;
+        case "short_break": return 5 * 60;
+        case "long_break": return 15 * 60;
+        default: return 25 * 60;
+      }
+    };
+    const currentDuration = getCurrentDuration();
+    return Math.max(0, Math.min(100, ((currentDuration - state.time) / currentDuration) * 100));
+  }, [state?.mode, state?.time]);
+
+  // Memoize mode configuration
+  const modeConfig = useMemo(() => {
+    if (!state) {
+      return {
+        gradient: "from-green-500 to-emerald-600",
+        bgGradient: "from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950",
+        icon: Target,
+        title: "Focus Time",
+        subtitle: "Stay focused and productive",
+        color: "text-green-600 dark:text-green-400"
+      };
     }
-  };
 
-  const currentDuration = getCurrentDuration();
-  const progress = Math.max(0, Math.min(100, ((currentDuration - validTime) / currentDuration) * 100));
-
-  const getModeConfig = () => {
-    switch (mode) {
+    switch (state.mode) {
       case "focus":
         return {
-          gradient: "from-indigo-500 via-purple-500 to-pink-500",
-          bgGradient: "from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950",
+          gradient: "from-green-500 to-emerald-600",
+          bgGradient: "from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950",
           icon: Target,
           title: "Focus Time",
-          subtitle: "Stay focused and productive"
+          subtitle: "Stay focused and productive",
+          color: "text-green-600 dark:text-green-400"
         };
       case "short_break":
         return {
-          gradient: "from-emerald-500 via-teal-500 to-cyan-500",
-          bgGradient: "from-emerald-50 to-teal-50 dark:from-emerald-950 dark:to-teal-950",
+          gradient: "from-blue-500 to-cyan-600",
+          bgGradient: "from-blue-50 to-cyan-50 dark:from-blue-950 dark:to-cyan-950",
           icon: Coffee,
           title: "Short Break",
-          subtitle: "Take a quick breather"
+          subtitle: "Take a quick breather",
+          color: "text-blue-600 dark:text-blue-400"
         };
       case "long_break":
         return {
-          gradient: "from-orange-500 via-red-500 to-pink-500",
-          bgGradient: "from-orange-50 to-red-50 dark:from-orange-950 dark:to-red-950",
+          gradient: "from-purple-500 to-pink-600",
+          bgGradient: "from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950",
           icon: Zap,
           title: "Long Break",
-          subtitle: "Time to recharge"
+          subtitle: "Time to recharge",
+          color: "text-purple-600 dark:text-purple-400"
         };
       default:
         return {
-          gradient: "from-indigo-500 via-purple-500 to-pink-500",
-          bgGradient: "from-indigo-50 to-purple-50 dark:from-indigo-950 dark:to-purple-950",
+          gradient: "from-green-500 to-emerald-600",
+          bgGradient: "from-green-50 to-emerald-50 dark:from-green-950 dark:to-emerald-950",
           icon: Target,
           title: "Focus Time",
-          subtitle: "Stay focused and productive"
+          subtitle: "Stay focused and productive",
+          color: "text-green-600 dark:text-green-400"
         };
     }
-  };
+  }, [state?.mode]);
 
-  const modeConfig = getModeConfig();
   const IconComponent = modeConfig.icon;
 
+  // Memoize event handlers to prevent unnecessary re-renders
+  const handleStartPause = useCallback(() => {
+    if (state?.isRunning) {
+      pauseTimer();
+    } else {
+      startTimer();
+    }
+  }, [state?.isRunning, startTimer, pauseTimer]);
+
+  const handleReset = useCallback(() => {
+    resetTimer();
+  }, [resetTimer]);
+
+  if (isLoading || !state) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div
+          className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"
+          role="status"
+          aria-label="Loading timer"
+        ></div>
+      </div>
+    );
+  }
+
   return (
-    <div className={`h-full rounded-2xl bg-gradient-to-br ${modeConfig.bgGradient} p-6 flex flex-col items-center justify-center`}>
-      {/* Mode Header */}
-      <div className="text-center mb-8">
-        <div className="flex items-center justify-center mb-3">
-          <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg`}>
-            <IconComponent className="w-6 h-6 text-white" />
+    <div className="h-full flex flex-col space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-red-500 to-pink-600 flex items-center justify-center">
+            <Target className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100">Pomodoro Pro</h1>
+            <p className="text-xs text-gray-600 dark:text-gray-400">Boost your productivity</p>
           </div>
         </div>
-        <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">
-          {modeConfig.title}
-        </h2>
-        <p className="text-sm text-gray-600 dark:text-gray-400">
-          {modeConfig.subtitle}
-        </p>
-      </div>
-
-      {/* Timer Circle */}
-      <div className="relative w-40 h-40 mb-8">
-        <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-          {/* Background circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke="rgba(255, 255, 255, 0.2)"
-            strokeWidth="4"
-          />
-          {/* Progress circle */}
-          <circle
-            cx="50"
-            cy="50"
-            r="45"
-            fill="none"
-            stroke={`url(#gradient-${mode})`}
-            strokeWidth="4"
-            strokeDasharray={`${2 * Math.PI * 45}`}
-            strokeDashoffset={`${2 * Math.PI * 45 * (1 - progress / 100)}`}
-            strokeLinecap="round"
-            className="transition-all duration-1000 ease-out drop-shadow-lg"
-          />
-          {/* Gradient definitions */}
-          <defs>
-            <linearGradient id="gradient-focus" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#6366f1" />
-              <stop offset="50%" stopColor="#a855f7" />
-              <stop offset="100%" stopColor="#ec4899" />
-            </linearGradient>
-            <linearGradient id="gradient-short_break" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#10b981" />
-              <stop offset="50%" stopColor="#14b8a6" />
-              <stop offset="100%" stopColor="#06b6d4" />
-            </linearGradient>
-            <linearGradient id="gradient-long_break" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="#f59e0b" />
-              <stop offset="50%" stopColor="#ef4444" />
-              <stop offset="100%" stopColor="#ec4899" />
-            </linearGradient>
-          </defs>
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="text-4xl font-bold text-gray-800 dark:text-gray-100 tracking-wider mb-1">
-            {minutes}:{seconds}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 text-yellow-500">
+            <Star className="w-4 h-4" />
+            <Star className="w-4 h-4" />
+            <Star className="w-4 h-4" />
           </div>
-          <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-            {Math.round(progress)}% Complete
-          </div>
+          <span className="text-sm font-medium text-green-600">Rate now</span>
         </div>
       </div>
 
-      {/* Control buttons */}
-      <div className="flex gap-4">
-        <Button
-          size="lg"
-          onClick={() => setIsRunning(!isRunning)}
-          className={`px-8 py-4 rounded-xl font-semibold shadow-xl transition-all duration-300 hover:scale-105 ${
-            isRunning
-              ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
-              : `bg-gradient-to-r ${modeConfig.gradient} hover:shadow-2xl text-white`
-          }`}
-        >
-          {isRunning ? (
-            <>
-              <Pause className="w-5 h-5 mr-2" />
-              Pause
-            </>
-          ) : (
-            <>
-              <Play className="w-5 h-5 mr-2" />
-              Start
-            </>
-          )}
-        </Button>
-        <Button
-          size="lg"
-          variant="outline"
-          onClick={reset}
-          className="px-8 py-4 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg"
-        >
-          <RotateCcw className="w-5 h-5 mr-2" />
-          Reset
-        </Button>
+      {/* Main Timer Card */}
+      <Card className="p-6 border-0 shadow-xl bg-gradient-to-br from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 rounded-2xl">
+        {/* Mode Header */}
+        <div className="text-center mb-4">
+          <div className="flex items-center justify-center mb-3">
+            <div className={`w-12 h-12 rounded-full bg-gradient-to-r ${modeConfig.gradient} flex items-center justify-center shadow-lg`}>
+              <IconComponent className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100 mb-1">
+            {modeConfig.title}
+          </h2>
+          <p className="text-xs text-gray-600 dark:text-gray-400">
+            {modeConfig.subtitle}
+          </p>
+        </div>
+
+        {/* Timer Display */}
+        <div className="relative w-32 h-32 mx-auto mb-4">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            {/* Background circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke="rgba(156, 163, 175, 0.2)"
+              strokeWidth="3"
+            />
+            {/* Progress circle */}
+            <circle
+              cx="50"
+              cy="50"
+              r="40"
+              fill="none"
+              stroke={`url(#gradient-${state.mode})`}
+              strokeWidth="3"
+              strokeDasharray={`${2 * Math.PI * 40}`}
+              strokeDashoffset={`${2 * Math.PI * 40 * (1 - progress / 100)}`}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out drop-shadow-lg"
+            />
+            {/* Gradient definitions */}
+            <defs>
+              <linearGradient id="gradient-focus" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#10b981" />
+                <stop offset="100%" stopColor="#059669" />
+              </linearGradient>
+              <linearGradient id="gradient-short_break" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#3b82f6" />
+                <stop offset="100%" stopColor="#0891b2" />
+              </linearGradient>
+              <linearGradient id="gradient-long_break" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#8b5cf6" />
+                <stop offset="100%" stopColor="#ec4899" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <div className="text-3xl font-bold text-gray-800 dark:text-gray-100 tracking-wider mb-1">
+              {timeString}
+            </div>
+            <div className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              {Math.round(progress)}% Complete
+            </div>
+          </div>
+        </div>
+
+        {/* Ready? Start! Text */}
+        <div className="text-center mb-4">
+          <div className="text-lg font-semibold text-green-600 mb-1">
+            Ready? Start! 🚀
+          </div>
+        </div>
+
+        {/* Control buttons */}
+        <div className="flex gap-3 justify-center">
+          <Button
+            size="sm"
+            onClick={handleStartPause}
+            className={`px-6 py-2 rounded-xl font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
+              state.isRunning
+                ? "bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white"
+                : `bg-gradient-to-r ${modeConfig.gradient} hover:shadow-xl text-white`
+            }`}
+          >
+            {state.isRunning ? (
+              <>
+                <Pause className="w-4 h-4 mr-2" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Start
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleReset}
+            className="px-6 py-2 rounded-xl font-semibold border-2 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 hover:scale-105 shadow-lg"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" />
+            Reset
+          </Button>
+        </div>
+      </Card>
+
+      {/* Stats Section */}
+      <div className="text-center">
+        <div className="text-2xl font-bold text-green-600 mb-1">
+          {state.todos.length}
+        </div>
+        <div className="text-sm text-green-600 font-medium">Todos</div>
+
+        <hr className="my-3 border-gray-200 dark:border-gray-700" />
+
+        <div className="flex justify-center gap-8">
+          <div>
+            <div className="text-xl font-bold text-green-600">{state.pomodoros}</div>
+            <div className="text-xs text-green-600">Pomodoro</div>
+          </div>
+          <div className="border-l border-gray-200 dark:border-gray-700 pl-8">
+            <div className="text-xl font-bold text-green-600">{state.focusSeconds}</div>
+            <div className="text-xs text-green-600">secs Focus</div>
+          </div>
+        </div>
+
+        <div className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          This updates every time the time runs out
+        </div>
+      </div>
+
+      {/* Navigation Bar */}
+      <div className="flex justify-center gap-4 mt-auto">
+        <div className="w-10 h-10 rounded-lg bg-green-500 flex items-center justify-center">
+          <Clock className="w-5 h-5 text-white" />
+        </div>
+        <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <Target className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </div>
+        <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <TrendingUp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </div>
+        <div className="w-10 h-10 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+          <Star className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+        </div>
       </div>
     </div>
   );
