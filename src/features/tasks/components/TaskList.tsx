@@ -1,11 +1,16 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import React, { useState } from 'react';
 import { useTasks } from '../hooks/useTasks';
 import { Task, TaskSort } from '../types/task';
 import { AddTaskForm } from './AddTaskForm';
 import { TaskDetailModal } from './TaskDetailModal';
 import { TaskSearchAndActions } from './TaskSearchAndActions';
-import { TaskStats } from './TaskStats';
 import { TaskTabs } from './TaskTabs';
 
 export const TaskList: React.FC = () => {
@@ -67,10 +72,13 @@ export const TaskList: React.FC = () => {
     }
   };
 
-  const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase())) ||
-                         task.project.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      task.tags.some((tag) =>
+        tag.toLowerCase().includes(searchTerm.toLowerCase())
+      ) ||
+      task.project.toLowerCase().includes(searchTerm.toLowerCase());
 
     if (searchTerm) return matchesSearch;
     return true;
@@ -81,9 +89,13 @@ export const TaskList: React.FC = () => {
 
     switch (sortBy) {
       case 'priority':
-        const aPriority = priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
-        const bPriority = priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
-        return sortDirection === 'desc' ? bPriority - aPriority : aPriority - bPriority;
+        const aPriority =
+          priorityOrder[a.priority as keyof typeof priorityOrder] || 0;
+        const bPriority =
+          priorityOrder[b.priority as keyof typeof priorityOrder] || 0;
+        return sortDirection === 'desc'
+          ? bPriority - aPriority
+          : aPriority - bPriority;
       case 'dueDate':
         if (!a.dueDate) return 1;
         if (!b.dueDate) return -1;
@@ -93,7 +105,9 @@ export const TaskList: React.FC = () => {
       case 'createdAt':
         const aCreated = new Date(a.createdAt).getTime();
         const bCreated = new Date(b.createdAt).getTime();
-        return sortDirection === 'desc' ? bCreated - aCreated : aCreated - bCreated;
+        return sortDirection === 'desc'
+          ? bCreated - aCreated
+          : aCreated - bCreated;
       case 'title':
         const comparison = a.title.localeCompare(b.title);
         return sortDirection === 'desc' ? -comparison : comparison;
@@ -102,36 +116,35 @@ export const TaskList: React.FC = () => {
     }
   });
 
-  const todayTasks = sortedTasks.filter(task => {
-    if (!task.dueDate) return false;
+  // Fix today filter logic - check if task was created today or has today's due date
+  const todayTasks = sortedTasks.filter((task) => {
     const today = new Date().toISOString().split('T')[0];
-    return task.dueDate === today;
+    const taskCreatedToday = task.createdAt.split('T')[0] === today;
+    const taskDueToday = task.dueDate && task.dueDate === today;
+    return taskCreatedToday || taskDueToday;
   });
 
-  const pendingTasks = sortedTasks.filter(task => !task.completed);
-  const completedTasks = sortedTasks.filter(task => task.completed);
+  const pendingTasks = sortedTasks.filter((task) => !task.completed);
+  const completedTasks = sortedTasks.filter((task) => task.completed);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64" role="status" aria-label="Loading tasks">
+      <div
+        className="flex items-center justify-center h-64"
+        role="status"
+        aria-label="Loading tasks"
+      >
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (error) {
-    return (
-      <div className="text-center text-red-600 p-4">
-        Error: {error}
-      </div>
-    );
+    return <div className="text-center text-red-600 p-4">Error: {error}</div>;
   }
 
   return (
-    <div className="h-full flex flex-col space-y-4">
-      {/* Stats */}
-      {stats && <TaskStats stats={stats} />}
-
+    <div className="h-full flex flex-col space-y-2 pb-8">
       {/* Search and Actions */}
       <TaskSearchAndActions
         searchTerm={searchTerm}
@@ -141,6 +154,7 @@ export const TaskList: React.FC = () => {
         sortDirection={sortDirection}
         onSortDirectionChange={setSortDirection}
         onAddTask={() => setShowAddDialog(true)}
+        todayTasksCount={todayTasks.length}
       />
 
       {/* Tabs */}

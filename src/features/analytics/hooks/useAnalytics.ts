@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnalyticsService } from '../services/analyticsService';
-import { 
-  ReportSummary, 
-  ProjectTimeData, 
-  FocusTimeEntry, 
-  TaskChartData, 
-  ReportView, 
-  TimeRange 
+import {
+  FocusTimeEntry,
+  ProjectTimeData,
+  ReportSummary,
+  ReportView,
+  TaskChartData,
+  TimeRange,
 } from '../types';
 
 export const useAnalytics = () => {
@@ -23,17 +23,18 @@ export const useAnalytics = () => {
   const loadReportData = async () => {
     setIsLoading(true);
     try {
-      const [
-        summaryData,
-        projectData,
-        focusData,
-        chartData
-      ] = await Promise.all([
-        analyticsService.getReportSummary(),
-        analyticsService.getProjectTimeDistribution(),
-        analyticsService.getFocusTimeDistribution(),
-        analyticsService.getTaskChartData(timeRange === 'biweekly' ? 'biweekly' : 'week')
-      ]);
+      // Initialize sample data if no tasks exist
+      await analyticsService.initializeSampleData();
+
+      const [summaryData, projectData, focusData, chartData] =
+        await Promise.all([
+          analyticsService.getReportSummary(),
+          analyticsService.getProjectTimeDistribution(),
+          analyticsService.getFocusTimeDistribution(),
+          analyticsService.getTaskChartData(
+            timeRange === 'biweekly' ? 'biweekly' : 'week'
+          ),
+        ]);
 
       setSummary(summaryData);
       setProjectTimeData(projectData);
@@ -66,4 +67,4 @@ export const useAnalytics = () => {
     taskChartData,
     refreshData,
   };
-}; 
+};

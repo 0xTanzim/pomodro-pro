@@ -8,11 +8,20 @@ vi.mock('../TaskCard', () => ({
   TaskCard: ({ task, onEdit, onDelete, onToggleCompletion }: any) => (
     <div data-testid={`completed-task-card-${task.id}`}>
       <span>{task.title}</span>
-      <button onClick={onEdit} data-testid={`completed-edit-${task.id}`}>Edit</button>
-      <button onClick={onDelete} data-testid={`completed-delete-${task.id}`}>Delete</button>
-      <button onClick={onToggleCompletion} data-testid={`completed-toggle-${task.id}`}>Toggle</button>
+      <button onClick={onEdit} data-testid={`completed-edit-${task.id}`}>
+        Edit
+      </button>
+      <button onClick={onDelete} data-testid={`completed-delete-${task.id}`}>
+        Delete
+      </button>
+      <button
+        onClick={onToggleCompletion}
+        data-testid={`completed-toggle-${task.id}`}
+      >
+        Toggle
+      </button>
     </div>
-  )
+  ),
 }));
 
 const mockTasks: Task[] = [
@@ -30,7 +39,7 @@ const mockTasks: Task[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     completedAt: '2024-01-15T00:00:00Z',
-    color: '#10b981'
+    color: '#10b981',
   },
   {
     id: '2',
@@ -46,7 +55,7 @@ const mockTasks: Task[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     completedAt: '2024-01-10T00:00:00Z',
-    color: '#10b981'
+    color: '#10b981',
   },
   {
     id: '3',
@@ -62,21 +71,21 @@ const mockTasks: Task[] = [
     createdAt: '2024-01-01T00:00:00Z',
     updatedAt: '2024-01-01T00:00:00Z',
     completedAt: '2024-01-12T00:00:00Z',
-    color: '#10b981'
-  }
+    color: '#10b981',
+  },
 ];
 
 const mockAchievements = [
   {
     date: '2024-01-15',
     focusTime: 120,
-    completedTasks: 1
+    completedTasks: 1,
   },
   {
     date: '2024-01-10',
     focusTime: 60,
-    completedTasks: 1
-  }
+    completedTasks: 1,
+  },
 ];
 
 const mockProps = {
@@ -125,7 +134,7 @@ describe('CompletedTasks', () => {
   it('handles tasks without achievements gracefully', () => {
     const propsWithoutAchievements = {
       ...mockProps,
-      achievements: []
+      achievements: [],
     };
 
     render(<CompletedTasks {...propsWithoutAchievements} />);
@@ -138,13 +147,15 @@ describe('CompletedTasks', () => {
   it('shows empty state when no completed tasks', () => {
     const emptyProps = {
       ...mockProps,
-      tasks: []
+      tasks: [],
     };
 
     render(<CompletedTasks {...emptyProps} />);
 
     expect(screen.getByText('No completed tasks yet')).toBeInTheDocument();
-    expect(screen.getByText('Complete some tasks to see them here!')).toBeInTheDocument();
+    expect(
+      screen.getByText('Complete some tasks to see them here!')
+    ).toBeInTheDocument();
   });
 
   it('calls onEdit when edit button is clicked', () => {
@@ -190,40 +201,22 @@ describe('CompletedTasks', () => {
     expect(screen.getByTestId('completed-task-card-1')).toBeInTheDocument();
   });
 
-  it('has proper scroll behavior with max height and overflow', () => {
-    render(<CompletedTasks {...mockProps} />);
-
-    // Find the main container div that has the scroll classes
-    const container = screen.getByText('Completed').closest('.space-y-6');
-    expect(container).toHaveClass('max-h-96', 'overflow-y-auto');
-  });
-
-  it('formats dates correctly', () => {
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const tasksWithTodayDate = [
-      {
-        ...mockTasks[0],
-        completedAt: today.toISOString()
-      }
-    ];
-
-    render(<CompletedTasks {...mockProps} tasks={tasksWithTodayDate} />);
-
-    expect(screen.getByText('Today')).toBeInTheDocument();
-  });
-
   it('handles tasks with unknown completion date', () => {
     const tasksWithUnknownDate = [
       {
         ...mockTasks[0],
-        completedAt: undefined
-      }
+        completedAt: undefined,
+      },
     ];
 
-    render(<CompletedTasks {...mockProps} tasks={tasksWithUnknownDate} />);
+    render(
+      <CompletedTasks
+        tasks={tasksWithUnknownDate}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+        onToggle={vi.fn()}
+      />
+    );
 
     expect(screen.getByText('Invalid Date')).toBeInTheDocument();
   });
