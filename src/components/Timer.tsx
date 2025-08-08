@@ -41,13 +41,53 @@ export default function Timer(): React.JSX.Element {
     skipBreak,
     setSelectedTask,
   } = useTimerStore();
-  const { tasks, isLoading: tasksLoading } = useTasks();
+  const { tasks, loading: tasksLoading } = useTasks();
   const { resolvedTheme } = useTheme();
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [pomodoroLog, setPomodoroLog] = useState<
+    Array<{
+      taskId: string;
+      title: string;
+      project?: string;
+      minutes: number;
+      finishedAt: string;
+    }>
+  >([]);
 
   useEffect(() => {
     loadState();
   }, [loadState]);
+
+  // Load pomodoro log data
+  useEffect(() => {
+    const loadPomodoroLog = async () => {
+      try {
+        const result = await chrome.storage.local.get(['pomodoroLog']);
+        const log = Array.isArray(result.pomodoroLog) ? result.pomodoroLog : [];
+        setPomodoroLog(log);
+      } catch (error) {
+        console.error('Error loading pomodoro log:', error);
+      }
+    };
+
+    loadPomodoroLog();
+
+    // Listen for pomodoro log changes
+    const handleStorageChange = (
+      changes: Record<string, chrome.storage.StorageChange>,
+      area: string
+    ) => {
+      if (area === 'local' && changes.pomodoroLog) {
+        const log = Array.isArray(changes.pomodoroLog.newValue)
+          ? changes.pomodoroLog.newValue
+          : [];
+        setPomodoroLog(log);
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+  }, []);
 
   // Get pending tasks for selection (including completed ones for display)
   const pendingTasks = useMemo(() => {
@@ -61,30 +101,57 @@ export default function Timer(): React.JSX.Element {
 
   // Calculate real-time stats from tasks and pomodoro logs
   const realTimeStats = useMemo(() => {
-    const pendingTasksCount = tasks.filter((task) => !task.completed).length;
-
-    // Get today's pomodoros from pomodoro log
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
 
-    // Calculate total pomodoros from tasks (fallback)
-    const totalPomodoros = tasks.reduce(
-      (sum, task) => sum + task.completedPomodoros,
-      0
-    );
+    // Get today's pending tasks
+    const todayPendingTasks = tasks.filter((task) => {
+      if (task.completed) return false;
+      const taskDate = new Date(task.createdAt);
+      return taskDate >= today && taskDate < tomorrow;
+    });
+    const pendingTasksCount = todayPendingTasks.length;
 
-    // Calculate total focus time from tasks
-    const totalFocusTime = tasks.reduce((sum, task) => {
-      const duration = task.pomodoroDuration || 25; // Default to 25 minutes
-      return sum + task.completedPomodoros * duration;
-    }, 0);
+    // Calculate today's pomodoros and focus time from pomodoro log
+    let todayPomodoros = 0;
+    let todayFocusTime = 0;
+
+    if (pomodoroLog.length > 0) {
+      // Filter pomodoro log for today's entries only
+      const todayEntries = pomodoroLog.filter((entry) => {
+        const entryDate = new Date(entry.finishedAt);
+        return entryDate >= today && entryDate < tomorrow;
+      });
+
+      todayPomodoros = todayEntries.length;
+      todayFocusTime = todayEntries.reduce((sum, entry) => {
+        return sum + (Number.isFinite(entry.minutes) ? entry.minutes : 0);
+      }, 0);
+    } else {
+      // Fallback to task data for today only
+      const todayTasks = tasks.filter((task) => {
+        const taskDate = new Date(task.createdAt);
+        return taskDate >= today && taskDate < tomorrow;
+      });
+
+      todayPomodoros = todayTasks.reduce(
+        (sum, task) => sum + task.completedPomodoros,
+        0
+      );
+      todayFocusTime = todayTasks.reduce((sum, task) => {
+        const duration = task.pomodoroDuration || 25; // Default to 25 minutes
+        return sum + task.completedPomodoros * duration;
+      }, 0);
+    }
 
     return {
       todos: pendingTasksCount,
-      pomodoros: totalPomodoros,
-      focus: Math.round(totalFocusTime / 60), // Convert to minutes
+      pomodoros: todayPomodoros,
+      focus: Math.round(todayFocusTime), // Already in minutes from pomodoro log
     };
-  }, [tasks]);
+  }, [tasks, pomodoroLog]);
 
   // Memoize time formatting to prevent unnecessary recalculations
   const timeString = useMemo(() => {
@@ -441,7 +508,7 @@ export default function Timer(): React.JSX.Element {
                 </div>
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400">
-                Real-time from tasks
+                Today's real-time stats
               </div>
             </div>
           </div>

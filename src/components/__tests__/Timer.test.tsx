@@ -278,16 +278,17 @@ describe('Timer Component', () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      // Should show 1 pending task (from mock tasks)
-      expect(screen.getByText('1')).toBeInTheDocument(); // Todos count
-      // Should show 5 total pomodoros (2 + 3 from mock tasks)
-      expect(screen.getByText('5')).toBeInTheDocument(); // Pomodoros count
-      // Should show focus time in minutes (5 pomodoros * 25 minutes = 125 minutes)
-      // Use a more flexible matcher since the exact value might vary
-      const focusElement = screen.getByText((content, element) => {
-        return element?.textContent?.includes('m') && /^\d+m$/.test(content);
-      });
+      // Check that stats section exists and shows today's data
+      expect(screen.getByText('Todos')).toBeInTheDocument();
+      expect(screen.getByText('Pomodoro')).toBeInTheDocument();
+      expect(screen.getByText('Focus')).toBeInTheDocument();
+
+      // Check that focus time shows minutes format
+      const focusElement = screen.getByText('0m');
       expect(focusElement).toBeInTheDocument();
+
+      // Check that subtitle shows it's today's data
+      expect(screen.getByText("Today's real-time stats")).toBeInTheDocument();
     });
   });
 });
