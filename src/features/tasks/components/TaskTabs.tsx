@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import React from 'react';
+import React, { useState } from 'react';
 import { Task } from '../types/task';
 import { CompletedTasks } from './CompletedTasks';
 import { TaskCard } from './TaskCard';
@@ -45,8 +45,14 @@ export const TaskTabs: React.FC<TaskTabsProps> = ({
   const allLimited = limitTasks(sortedTasks, 100); // Higher limit for overview
   const completedLimited = limitTasks(completedTasks, 50); // Recent completed only
 
+  const [activeTab, setActiveTab] = useState<string>('today');
+
   return (
-    <Tabs defaultValue="today" className="w-full h-full flex flex-col">
+    <Tabs
+      value={activeTab}
+      onValueChange={setActiveTab}
+      className="w-full h-full flex flex-col"
+    >
       <TabsList className="grid w-full grid-cols-4 flex-shrink-0 mb-1">
         <TabsTrigger value="today">
           Today ({formatCount(todayTasks.length)})

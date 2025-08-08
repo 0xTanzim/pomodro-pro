@@ -1,12 +1,28 @@
-import ThemeToggle from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BarChart3, Bell, Clock, Flag, FolderOpen, Plus, Save, Settings, X } from 'lucide-react';
+import ThemeToggle from '@/components/ThemeToggle';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  BarChart3,
+  Bell,
+  Clock,
+  Flag,
+  FolderOpen,
+  Plus,
+  Save,
+  Settings,
+  X,
+} from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
 interface Priority {
@@ -54,10 +70,13 @@ const defaultTimerSettings: TimerSettings = {
 export default function Options(): React.JSX.Element {
   const [priorities, setPriorities] = useState<Priority[]>(defaultPriorities);
   const [projects, setProjects] = useState<Project[]>(defaultProjects);
-  const [timerSettings, setTimerSettings] = useState<TimerSettings>(defaultTimerSettings);
+  const [timerSettings, setTimerSettings] =
+    useState<TimerSettings>(defaultTimerSettings);
   const [newPriority, setNewPriority] = useState('');
   const [newProject, setNewProject] = useState('');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [saveStatus, setSaveStatus] = useState<
+    'idle' | 'saving' | 'saved' | 'error'
+  >('idle');
 
   const openReport = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('report.html') });
@@ -67,10 +86,22 @@ export default function Options(): React.JSX.Element {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const result = await chrome.storage.sync.get(['priorities', 'projects', 'timerSettings']);
+        const result = await chrome.storage.sync.get([
+          'priorities',
+          'projects',
+          'timerSettings',
+        ]);
         if (result.priorities) setPriorities(result.priorities);
         if (result.projects) setProjects(result.projects);
-        if (result.timerSettings) setTimerSettings(result.timerSettings);
+        if (result.timerSettings) {
+          const ts = result.timerSettings;
+          setTimerSettings({
+            ...ts,
+            focusDuration: Math.round((ts.focusDuration ?? 1500) / 60),
+            shortBreakDuration: Math.round((ts.shortBreakDuration ?? 300) / 60),
+            longBreakDuration: Math.round((ts.longBreakDuration ?? 900) / 60),
+          });
+        }
       } catch (error) {
         console.error('Failed to load settings:', error);
       }
@@ -82,10 +113,20 @@ export default function Options(): React.JSX.Element {
   const saveSettings = async () => {
     setSaveStatus('saving');
     try {
+      const timerSettingsInSeconds = {
+        ...timerSettings,
+        focusDuration:
+          Math.max(1, Math.round(timerSettings.focusDuration)) * 60,
+        shortBreakDuration:
+          Math.max(1, Math.round(timerSettings.shortBreakDuration)) * 60,
+        longBreakDuration:
+          Math.max(1, Math.round(timerSettings.longBreakDuration)) * 60,
+      };
+
       await chrome.storage.sync.set({
         priorities,
         projects,
-        timerSettings,
+        timerSettings: timerSettingsInSeconds,
       });
       setSaveStatus('saved');
       setTimeout(() => setSaveStatus('idle'), 2000);
@@ -97,7 +138,12 @@ export default function Options(): React.JSX.Element {
 
   // Priority CRUD operations
   const addPriority = () => {
-    if (newPriority.trim() && !priorities.find(p => p.name.toLowerCase() === newPriority.trim().toLowerCase())) {
+    if (
+      newPriority.trim() &&
+      !priorities.find(
+        (p) => p.name.toLowerCase() === newPriority.trim().toLowerCase()
+      )
+    ) {
       const priority: Priority = {
         id: Date.now().toString(),
         name: newPriority.trim(),
@@ -109,16 +155,21 @@ export default function Options(): React.JSX.Element {
   };
 
   const removePriority = (id: string) => {
-    setPriorities(priorities.filter(p => p.id !== id));
+    setPriorities(priorities.filter((p) => p.id !== id));
   };
 
   const updatePriority = (id: string, name: string) => {
-    setPriorities(priorities.map(p => p.id === id ? { ...p, name } : p));
+    setPriorities(priorities.map((p) => (p.id === id ? { ...p, name } : p)));
   };
 
   // Project CRUD operations
   const addProject = () => {
-    if (newProject.trim() && !projects.find(p => p.name.toLowerCase() === newProject.trim().toLowerCase())) {
+    if (
+      newProject.trim() &&
+      !projects.find(
+        (p) => p.name.toLowerCase() === newProject.trim().toLowerCase()
+      )
+    ) {
       const project: Project = {
         id: Date.now().toString(),
         name: newProject.trim(),
@@ -130,16 +181,16 @@ export default function Options(): React.JSX.Element {
   };
 
   const removeProject = (id: string) => {
-    setProjects(projects.filter(p => p.id !== id));
+    setProjects(projects.filter((p) => p.id !== id));
   };
 
   const updateProject = (id: string, name: string) => {
-    setProjects(projects.map(p => p.id === id ? { ...p, name } : p));
+    setProjects(projects.map((p) => (p.id === id ? { ...p, name } : p)));
   };
 
   // Timer settings updates
   const updateTimerSetting = (key: keyof TimerSettings, value: any) => {
-    setTimerSettings(prev => ({ ...prev, [key]: value }));
+    setTimerSettings((prev) => ({ ...prev, [key]: value }));
   };
 
   return (
@@ -161,7 +212,11 @@ export default function Options(): React.JSX.Element {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            <Button onClick={openReport} variant="outline" className="flex items-center space-x-2">
+            <Button
+              onClick={openReport}
+              variant="outline"
+              className="flex items-center space-x-2"
+            >
               <BarChart3 className="h-4 w-4" />
               <span>View Report</span>
             </Button>
@@ -230,7 +285,10 @@ export default function Options(): React.JSX.Element {
                 </div>
                 <div className="space-y-2">
                   {priorities.map((priority) => (
-                    <div key={priority.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={priority.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center space-x-3">
                         <div
                           className="w-4 h-4 rounded-full"
@@ -238,7 +296,9 @@ export default function Options(): React.JSX.Element {
                         />
                         <Input
                           value={priority.name}
-                          onChange={(e) => updatePriority(priority.id, e.target.value)}
+                          onChange={(e) =>
+                            updatePriority(priority.id, e.target.value)
+                          }
                           className="w-32"
                         />
                       </div>
@@ -281,7 +341,10 @@ export default function Options(): React.JSX.Element {
                 </div>
                 <div className="space-y-2">
                   {projects.map((project) => (
-                    <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div
+                      key={project.id}
+                      className="flex items-center justify-between p-3 border rounded-lg"
+                    >
                       <div className="flex items-center space-x-3">
                         <div
                           className="w-4 h-4 rounded-full"
@@ -289,7 +352,9 @@ export default function Options(): React.JSX.Element {
                         />
                         <Input
                           value={project.name}
-                          onChange={(e) => updateProject(project.id, e.target.value)}
+                          onChange={(e) =>
+                            updateProject(project.id, e.target.value)
+                          }
                           className="w-32"
                         />
                       </div>
@@ -323,30 +388,51 @@ export default function Options(): React.JSX.Element {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="focusDuration">Focus Duration (minutes)</Label>
+                    <Label htmlFor="focusDuration">
+                      Focus Duration (minutes)
+                    </Label>
                     <Input
                       id="focusDuration"
                       type="number"
                       value={timerSettings.focusDuration}
-                      onChange={(e) => updateTimerSetting('focusDuration', parseInt(e.target.value) || 25)}
+                      onChange={(e) =>
+                        updateTimerSetting(
+                          'focusDuration',
+                          parseInt(e.target.value) || 25
+                        )
+                      }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="shortBreakDuration">Short Break (minutes)</Label>
+                    <Label htmlFor="shortBreakDuration">
+                      Short Break (minutes)
+                    </Label>
                     <Input
                       id="shortBreakDuration"
                       type="number"
                       value={timerSettings.shortBreakDuration}
-                      onChange={(e) => updateTimerSetting('shortBreakDuration', parseInt(e.target.value) || 5)}
+                      onChange={(e) =>
+                        updateTimerSetting(
+                          'shortBreakDuration',
+                          parseInt(e.target.value) || 5
+                        )
+                      }
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="longBreakDuration">Long Break (minutes)</Label>
+                    <Label htmlFor="longBreakDuration">
+                      Long Break (minutes)
+                    </Label>
                     <Input
                       id="longBreakDuration"
                       type="number"
                       value={timerSettings.longBreakDuration}
-                      onChange={(e) => updateTimerSetting('longBreakDuration', parseInt(e.target.value) || 15)}
+                      onChange={(e) =>
+                        updateTimerSetting(
+                          'longBreakDuration',
+                          parseInt(e.target.value) || 15
+                        )
+                      }
                     />
                   </div>
                 </div>
@@ -363,7 +449,9 @@ export default function Options(): React.JSX.Element {
                     </div>
                     <Switch
                       checked={timerSettings.autoStartPomodoros}
-                      onCheckedChange={(checked) => updateTimerSetting('autoStartPomodoros', checked)}
+                      onCheckedChange={(checked) =>
+                        updateTimerSetting('autoStartPomodoros', checked)
+                      }
                     />
                   </div>
                   <div className="flex items-center justify-between">
@@ -375,7 +463,9 @@ export default function Options(): React.JSX.Element {
                     </div>
                     <Switch
                       checked={timerSettings.autoStartBreaks}
-                      onCheckedChange={(checked) => updateTimerSetting('autoStartBreaks', checked)}
+                      onCheckedChange={(checked) =>
+                        updateTimerSetting('autoStartBreaks', checked)
+                      }
                     />
                   </div>
                 </div>
@@ -405,7 +495,9 @@ export default function Options(): React.JSX.Element {
                   </div>
                   <Switch
                     checked={timerSettings.notifications}
-                    onCheckedChange={(checked) => updateTimerSetting('notifications', checked)}
+                    onCheckedChange={(checked) =>
+                      updateTimerSetting('notifications', checked)
+                    }
                   />
                 </div>
               </CardContent>
@@ -415,7 +507,10 @@ export default function Options(): React.JSX.Element {
 
         {/* Save Button */}
         <div className="flex justify-end mt-8">
-          <Button onClick={saveSettings} className="flex items-center space-x-2">
+          <Button
+            onClick={saveSettings}
+            className="flex items-center space-x-2"
+          >
             <Save className="h-4 w-4" />
             <span>Save Settings</span>
           </Button>

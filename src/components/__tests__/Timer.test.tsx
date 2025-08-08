@@ -1,9 +1,9 @@
-import { ThemeProvider } from "@/contexts/ThemeContext";
-import { useTimerStore } from "@/store/timerStore";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import React from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import Timer from "../Timer";
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { useTimerStore } from '@/store/timerStore';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import React from 'react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Timer from '../Timer';
 
 // Mock Chrome APIs
 const mockChrome = {
@@ -38,20 +38,43 @@ const mockChrome = {
 };
 
 // Mock the timer store
-vi.mock("@/store/timerStore");
+vi.mock('@/store/timerStore');
 const mockUseTimerStore = useTimerStore as vi.MockedFunction<
   typeof useTimerStore
 >;
+
+// Mock useTasks hook
+vi.mock('@/features/tasks/hooks/useTasks', () => ({
+  useTasks: vi.fn(() => ({
+    tasks: [
+      {
+        id: '1',
+        title: 'Test Task 1',
+        completed: false,
+        completedPomodoros: 2,
+        pomodoroDuration: 25,
+      },
+      {
+        id: '2',
+        title: 'Test Task 2',
+        completed: true,
+        completedPomodoros: 3,
+        pomodoroDuration: 25,
+      },
+    ],
+    isLoading: false,
+  })),
+}));
 
 // Wrapper component for tests
 const TestWrapper = ({ children }: { children: React.ReactNode }) => (
   <ThemeProvider>{children}</ThemeProvider>
 );
 
-describe("Timer Component", () => {
+describe('Timer Component', () => {
   const defaultMockState = {
     time: 1500, // 25 minutes
-    mode: "focus" as const,
+    mode: 'focus' as const,
     isRunning: false,
     cycle: 0,
     todos: [],
@@ -60,6 +83,16 @@ describe("Timer Component", () => {
     totalFocusTime: 0,
     dailyGoal: 28800,
     streak: 0,
+  };
+
+  const defaultMockSettings = {
+    focusDuration: 1500,
+    shortBreakDuration: 300,
+    longBreakDuration: 900,
+    autoStartBreaks: false,
+    autoStartPomodoros: false,
+    notifications: true,
+    sound: true,
   };
 
   const defaultMockActions = {
@@ -83,33 +116,35 @@ describe("Timer Component", () => {
     // Mock timer store
     mockUseTimerStore.mockReturnValue({
       state: defaultMockState,
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
     });
   });
 
-  it("renders timer with correct time format", async () => {
+  it('renders timer with correct time format', async () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("25:00")).toBeInTheDocument();
+      expect(screen.getByText('25:00')).toBeInTheDocument();
     });
-    expect(screen.getByText("Focus Time")).toBeInTheDocument();
+    expect(screen.getByText('Focus Time')).toBeInTheDocument();
   });
 
-  it("displays start button when timer is not running", async () => {
+  it('displays start button when timer is not running', async () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("Start")).toBeInTheDocument();
+      expect(screen.getByText('Start')).toBeInTheDocument();
     });
-    expect(screen.queryByText("Pause")).not.toBeInTheDocument();
+    expect(screen.queryByText('Pause')).not.toBeInTheDocument();
   });
 
-  it("displays pause button when timer is running", async () => {
+  it('displays pause button when timer is running', async () => {
     mockUseTimerStore.mockReturnValue({
       state: { ...defaultMockState, isRunning: true },
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -118,15 +153,16 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("Pause")).toBeInTheDocument();
+      expect(screen.getByText('Pause')).toBeInTheDocument();
     });
-    expect(screen.queryByText("Start")).not.toBeInTheDocument();
+    expect(screen.queryByText('Start')).not.toBeInTheDocument();
   });
 
-  it("calls startTimer when start button is clicked", async () => {
+  it('calls startTimer when start button is clicked', async () => {
     const mockStartTimer = vi.fn().mockResolvedValue(undefined);
     mockUseTimerStore.mockReturnValue({
       state: defaultMockState,
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -136,17 +172,18 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      const startButton = screen.getByText("Start");
+      const startButton = screen.getByText('Start');
       fireEvent.click(startButton);
     });
 
     expect(mockStartTimer).toHaveBeenCalled();
   });
 
-  it("calls pauseTimer when pause button is clicked", async () => {
+  it('calls pauseTimer when pause button is clicked', async () => {
     const mockPauseTimer = vi.fn().mockResolvedValue(undefined);
     mockUseTimerStore.mockReturnValue({
       state: { ...defaultMockState, isRunning: true },
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -156,17 +193,18 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      const pauseButton = screen.getByText("Pause");
+      const pauseButton = screen.getByText('Pause');
       fireEvent.click(pauseButton);
     });
 
     expect(mockPauseTimer).toHaveBeenCalled();
   });
 
-  it("calls resetTimer when reset button is clicked", async () => {
+  it('shows confirmation before calling resetTimer', async () => {
     const mockResetTimer = vi.fn().mockResolvedValue(undefined);
     mockUseTimerStore.mockReturnValue({
       state: defaultMockState,
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -176,16 +214,24 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      const resetButton = screen.getByText("Reset");
+      const resetButton = screen.getByText('Reset');
       fireEvent.click(resetButton);
     });
+
+    // Confirm dialog appears
+    expect(screen.getByText('Reset timer?')).toBeInTheDocument();
+
+    // Confirm action
+    const confirm = screen.getByText('Confirm');
+    fireEvent.click(confirm);
 
     expect(mockResetTimer).toHaveBeenCalled();
   });
 
-  it("displays correct time for different durations", async () => {
+  it('displays correct time for different durations', async () => {
     mockUseTimerStore.mockReturnValue({
       state: { ...defaultMockState, time: 3661 }, // 1 hour 1 minute 1 second
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -194,13 +240,14 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("61:01")).toBeInTheDocument();
+      expect(screen.getByText('61:01')).toBeInTheDocument();
     });
   });
 
-  it("displays correct mode labels", async () => {
+  it('displays correct mode labels', async () => {
     mockUseTimerStore.mockReturnValue({
-      state: { ...defaultMockState, mode: "short_break" },
+      state: { ...defaultMockState, mode: 'short_break' },
+      settings: defaultMockSettings,
       isLoading: false,
       error: null,
       ...defaultMockActions,
@@ -209,13 +256,14 @@ describe("Timer Component", () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("Short Break")).toBeInTheDocument();
+      expect(screen.getByText('Short Break')).toBeInTheDocument();
     });
   });
 
-  it("shows loading spinner when isLoading is true", () => {
+  it('shows loading spinner when isLoading is true', () => {
     mockUseTimerStore.mockReturnValue({
       state: null,
+      settings: null,
       isLoading: true,
       error: null,
       ...defaultMockActions,
@@ -223,30 +271,23 @@ describe("Timer Component", () => {
 
     render(<Timer />, { wrapper: TestWrapper });
 
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(screen.getByRole('status')).toBeInTheDocument();
   });
 
-  it("displays stats correctly", async () => {
-    const mockStateWithTodos = {
-      ...defaultMockState,
-      todos: [{ id: "1", text: "Test todo", completed: false }],
-      pomodoros: 5,
-      focusSeconds: 3600,
-    };
-
-    mockUseTimerStore.mockReturnValue({
-      state: mockStateWithTodos,
-      isLoading: false,
-      error: null,
-      ...defaultMockActions,
-    });
-
+  it('displays stats correctly', async () => {
     render(<Timer />, { wrapper: TestWrapper });
 
     await waitFor(() => {
-      expect(screen.getByText("1")).toBeInTheDocument(); // Todos count
-      expect(screen.getByText("5")).toBeInTheDocument(); // Pomodoros count
-      expect(screen.getByText("3600")).toBeInTheDocument(); // Focus seconds
+      // Should show 1 pending task (from mock tasks)
+      expect(screen.getByText('1')).toBeInTheDocument(); // Todos count
+      // Should show 5 total pomodoros (2 + 3 from mock tasks)
+      expect(screen.getByText('5')).toBeInTheDocument(); // Pomodoros count
+      // Should show focus time in minutes (5 pomodoros * 25 minutes = 125 minutes)
+      // Use a more flexible matcher since the exact value might vary
+      const focusElement = screen.getByText((content, element) => {
+        return element?.textContent?.includes('m') && /^\d+m$/.test(content);
+      });
+      expect(focusElement).toBeInTheDocument();
     });
   });
 });

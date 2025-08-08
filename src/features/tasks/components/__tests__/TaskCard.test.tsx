@@ -3,45 +3,25 @@ import { describe, expect, it, vi } from 'vitest';
 import { Task } from '../../types/task';
 import { TaskCard } from '../TaskCard';
 
-// Mock Chrome API
-global.chrome = {
-  storage: {
-    sync: {
-      get: vi.fn().mockResolvedValue({}),
-      set: vi.fn(),
-    },
-    local: {
-      get: vi.fn().mockResolvedValue({}),
-      set: vi.fn(),
-    },
-    onChanged: {
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-    },
-  },
-  runtime: {
-    sendMessage: vi.fn(),
-    onMessage: {
-      addListener: vi.fn(),
-      removeListener: vi.fn(),
-    },
-  },
-} as any;
+// Mock the current date to ensure consistent testing
+const mockDate = new Date('2024-01-15T12:00:00Z');
+vi.setSystemTime(mockDate);
 
 describe('TaskCard', () => {
   const mockTask: Task = {
     id: '1',
     title: 'Test Task',
-    description: 'Test description',
-    completed: false,
-    priority: 'high',
-    project: 'Work',
+    description: 'Test Description',
+    priority: 'medium',
+    project: 'Test Project',
+    tags: ['#Work'],
     pomodoroCount: 4,
     completedPomodoros: 2,
-    tags: ['#Work', '#Urgent'],
+    pomodoroDuration: 25,
+    completed: false,
+    createdAt: '2024-01-10T10:00:00Z',
+    updatedAt: '2024-01-10T10:00:00Z',
     attachments: [],
-    createdAt: new Date().toISOString(),
-    color: '#ef4444',
   };
 
   const defaultProps = {
@@ -51,132 +31,218 @@ describe('TaskCard', () => {
     onToggleCompletion: vi.fn(),
   };
 
-  it('renders task card with all information', () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  afterAll(() => {
+    vi.useRealTimers();
+  });
+
+  it('renders task card with basic information', () => {
     render(<TaskCard {...defaultProps} />);
 
     expect(screen.getByText('Test Task')).toBeInTheDocument();
-    expect(screen.getByText('Work')).toBeInTheDocument();
-    expect(screen.getByText('High')).toBeInTheDocument();
+    expect(screen.getByText('Test Project')).toBeInTheDocument();
+    expect(screen.getByText('Medium')).toBeInTheDocument();
     expect(screen.getByText('2/4 pomodoros')).toBeInTheDocument();
   });
 
-  it('shows completed state correctly', () => {
-    const completedTask = {
+  it('shows overdue badge when task is overdue', () => {
+    const overdueTask: Task = {
       ...mockTask,
-      completed: true,
-      completedAt: new Date().toISOString(),
+      dueDate: '2024-01-10', // 5 days ago
     };
-    render(<TaskCard {...defaultProps} task={completedTask} />);
 
-    expect(screen.getByText('Test Task')).toHaveClass('line-through');
-    expect(screen.getByText(/Completed/)).toBeInTheDocument();
-  });
-
-  it('shows overdue state correctly', () => {
-    const overdueTask = {
-      ...mockTask,
-      dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
-        .toISOString()
-        .split('T')[0],
-    };
     render(<TaskCard {...defaultProps} task={overdueTask} />);
 
     expect(screen.getByText('Overdue')).toBeInTheDocument();
-    expect(screen.getByText('Test Task')).toHaveClass('text-red-600');
   });
 
-  it('handles checkbox click', () => {
+  it('does not show overdue badge for completed tasks', () => {
+    const completedOverdueTask: Task = {
+      ...mockTask,
+      completed: true,
+      dueDate: '2024-01-10', // 5 days ago
+    };
+
+    render(<TaskCard {...defaultProps} task={completedOverdueTask} />);
+
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+  });
+
+  it('does not show overdue badge for tasks without due date', () => {
+    const taskWithoutDueDate: Task = {
+      ...mockTask,
+      dueDate: undefined,
+    };
+
+    render(<TaskCard {...defaultProps} task={taskWithoutDueDate} />);
+
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+  });
+
+  it('shows overdue badge for tasks due yesterday', () => {
+    const yesterdayTask: Task = {
+      ...mockTask,
+      dueDate: '2024-01-14', // Yesterday
+    };
+
+    render(<TaskCard {...defaultProps} task={yesterdayTask} />);
+
+    expect(screen.getByText('Overdue')).toBeInTheDocument();
+  });
+
+  it('does not show overdue badge for tasks due today', () => {
+    const todayTask: Task = {
+      ...mockTask,
+      dueDate: '2024-01-15', // Today
+    };
+
+    render(<TaskCard {...defaultProps} task={todayTask} />);
+
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+  });
+
+  it('does not show overdue badge for future tasks', () => {
+    const futureTask: Task = {
+      ...mockTask,
+      dueDate: '2024-01-20', // Future date
+    };
+
+    render(<TaskCard {...defaultProps} task={futureTask} />);
+
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
+  });
+
+  it('applies overdue styling when task is overdue', () => {
+    const overdueTask: Task = {
+      ...mockTask,
+      dueDate: '2024-01-10', // 5 days ago
+    };
+
+    render(<TaskCard {...defaultProps} task={overdueTask} />);
+
+    const taskTitle = screen.getByText('Test Task');
+    expect(taskTitle).toHaveClass('text-red-600');
+  });
+
+  it('calls onToggleCompletion when checkbox is clicked', () => {
     render(<TaskCard {...defaultProps} />);
 
     const checkbox = screen.getByRole('checkbox');
     fireEvent.click(checkbox);
 
-    expect(defaultProps.onToggleCompletion).toHaveBeenCalled();
+    expect(defaultProps.onToggleCompletion).toHaveBeenCalledTimes(1);
   });
 
-  it('handles edit button click', () => {
+  it('calls onEdit when edit button is clicked', () => {
     render(<TaskCard {...defaultProps} />);
 
     const editButton = screen.getByTitle('Edit task');
     fireEvent.click(editButton);
 
-    expect(defaultProps.onEdit).toHaveBeenCalled();
+    expect(defaultProps.onEdit).toHaveBeenCalledTimes(1);
   });
 
-  it('handles delete button click', () => {
+  it('calls onDelete when delete button is clicked', () => {
     render(<TaskCard {...defaultProps} />);
 
     const deleteButton = screen.getByTitle('Delete task');
     fireEvent.click(deleteButton);
 
-    expect(defaultProps.onDelete).toHaveBeenCalled();
+    expect(defaultProps.onDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows completed styling when task is completed', () => {
+    const completedTask: Task = {
+      ...mockTask,
+      completed: true,
+      completedAt: '2024-01-12T10:00:00Z',
+    };
+
+    render(<TaskCard {...defaultProps} task={completedTask} />);
+
+    const taskTitle = screen.getByText('Test Task');
+    expect(taskTitle).toHaveClass('line-through', 'text-gray-500');
+  });
+
+  it('shows completion date for completed tasks', () => {
+    const completedTask: Task = {
+      ...mockTask,
+      completed: true,
+      completedAt: '2024-01-12T10:00:00Z',
+    };
+
+    render(<TaskCard {...defaultProps} task={completedTask} />);
+
+    expect(screen.getByText(/Completed/)).toBeInTheDocument();
   });
 
   it('formats dates correctly', () => {
-    const todayTask = { ...mockTask, createdAt: new Date().toISOString() };
-    render(<TaskCard {...defaultProps} task={todayTask} />);
+    const taskWithRecentDate: Task = {
+      ...mockTask,
+      createdAt: '2024-01-15T10:00:00Z', // Today
+    };
+
+    render(<TaskCard {...defaultProps} task={taskWithRecentDate} />);
 
     expect(screen.getByText('Today')).toBeInTheDocument();
   });
 
-  it('handles long task titles', () => {
-    const longTitleTask = {
+  it('handles different priority levels correctly', () => {
+    const urgentTask: Task = {
       ...mockTask,
-      title:
-        'This is a very long task title that should be handled properly without breaking the layout',
+      priority: 'urgent',
     };
-    render(<TaskCard {...defaultProps} task={longTitleTask} />);
 
-    expect(screen.getByText(longTitleTask.title)).toBeInTheDocument();
+    render(<TaskCard {...defaultProps} task={urgentTask} />);
+
+    expect(screen.getByText('Urgent')).toBeInTheDocument();
   });
 
-  it('handles missing optional fields', () => {
-    const minimalTask = {
+  it('handles tasks with different pomodoro durations', () => {
+    const taskWithCustomDuration: Task = {
       ...mockTask,
-      description: undefined,
-      tags: [],
-      attachments: [],
-      dueDate: undefined,
+      pomodoroDuration: 30,
     };
-    render(<TaskCard {...defaultProps} task={minimalTask} />);
 
-    expect(screen.getByText('Test Task')).toBeInTheDocument();
+    render(<TaskCard {...defaultProps} task={taskWithCustomDuration} />);
+
     expect(screen.getByText('2/4 pomodoros')).toBeInTheDocument();
   });
 
-  it('shows different priority colors', () => {
-    const priorities = ['low', 'medium', 'high', 'urgent'] as const;
+  it('handles edge case: task due exactly at midnight', () => {
+    const midnightTask: Task = {
+      ...mockTask,
+      dueDate: '2024-01-15', // Today at midnight
+    };
 
-    priorities.forEach((priority) => {
-      const taskWithPriority = { ...mockTask, priority };
-      const { container } = render(
-        <TaskCard {...defaultProps} task={taskWithPriority} />
-      );
+    render(<TaskCard {...defaultProps} task={midnightTask} />);
 
-      const card = container.querySelector('.border-l-4');
-      expect(card).toBeInTheDocument();
-    });
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
   });
 
-  it('handles empty pomodoro count', () => {
-    const taskWithNoPomodoros = {
+  it('handles edge case: task due in different timezone', () => {
+    const timezoneTask: Task = {
       ...mockTask,
-      pomodoroCount: 0,
-      completedPomodoros: 0,
+      dueDate: '2024-01-14', // Yesterday in local time
     };
-    render(<TaskCard {...defaultProps} task={taskWithNoPomodoros} />);
 
-    expect(screen.getByText('0/0 pomodoros')).toBeInTheDocument();
+    render(<TaskCard {...defaultProps} task={timezoneTask} />);
+
+    expect(screen.getByText('Overdue')).toBeInTheDocument();
   });
 
-  it('shows completion timestamp for completed tasks', () => {
-    const completedTask = {
+  it('handles edge case: task with invalid due date', () => {
+    const invalidDateTask: Task = {
       ...mockTask,
-      completed: true,
-      completedAt: new Date().toISOString(),
+      dueDate: 'invalid-date',
     };
-    render(<TaskCard {...defaultProps} task={completedTask} />);
 
-    expect(screen.getByText(/Completed/)).toBeInTheDocument();
+    render(<TaskCard {...defaultProps} task={invalidDateTask} />);
+
+    // Should not crash and should not show overdue badge
+    expect(screen.queryByText('Overdue')).not.toBeInTheDocument();
   });
 });

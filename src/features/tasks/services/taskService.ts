@@ -52,7 +52,7 @@ export class TaskService {
 
   static async getTasks(): Promise<Task[]> {
     try {
-      const result = await chrome.storage.local.get([this.TASKS_KEY]);
+      const result = await chrome.storage.sync.get([this.TASKS_KEY]);
       return result[this.TASKS_KEY] || [];
     } catch (error) {
       console.error('Failed to get tasks:', error);
@@ -62,7 +62,7 @@ export class TaskService {
 
   static async saveTasks(tasks: Task[]): Promise<void> {
     try {
-      await chrome.storage.local.set({ [this.TASKS_KEY]: tasks });
+      await chrome.storage.sync.set({ [this.TASKS_KEY]: tasks });
     } catch (error) {
       console.error('Failed to save tasks:', error);
       throw error;
@@ -75,29 +75,16 @@ export class TaskService {
       const tasks = await this.getTasks();
       const completedTasks = tasks.filter((task) => task.completed);
 
-      // Keep only last 100 completed tasks to prevent storage bloat
-      if (completedTasks.length > 100) {
-        // Sort by completion date (newest first)
-        const sortedCompleted = completedTasks.sort((a, b) => {
-          const aDate = a.completedAt ? new Date(a.completedAt).getTime() : 0;
-          const bDate = b.completedAt ? new Date(b.completedAt).getTime() : 0;
-          return bDate - aDate;
-        });
+      // Remove completed tasks older than 30 days
+      const cutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
+      const updatedTasks = tasks.filter((task) => {
+        if (!task.completed) return true;
+        if (!task.completedAt) return true;
+        return new Date(task.completedAt).getTime() >= cutoff;
+      });
 
-        // Keep only the 100 most recent completed tasks
-        const tasksToKeep = sortedCompleted.slice(0, 100);
-        const tasksToRemove = sortedCompleted.slice(100);
-
-        // Remove old completed tasks
-        const updatedTasks = tasks.filter(
-          (task) =>
-            !task.completed ||
-            tasksToKeep.some((keepTask) => keepTask.id === task.id)
-        );
-
+      if (updatedTasks.length !== tasks.length) {
         await this.saveTasks(updatedTasks);
-
-        console.log(`Cleaned up ${tasksToRemove.length} old completed tasks`);
       }
     } catch (error) {
       console.error('Failed to cleanup completed tasks:', error);
@@ -233,35 +220,50 @@ export class TaskService {
   static async addTask(
     taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Task> {
-    // Validate task data
-    const validation = await this.validateTaskData(taskData);
-    if (!validation.isValid) {
-      throw new Error(`Validation failed: ${validation.errors.join(', ')}`);
+    try {
+      // Validate task data
+      const validationResult = await this.validateTaskData(taskData);
+      if (!validationResult.isValid) {
+        throw new Error(validationResult.errors.join(', '));
+      }
+
+      // Check daily limit
+      const dailyLimitResult = await this.checkDailyLimit();
+      if (!dailyLimitResult.canAdd) {
+        throw new Error(
+          `Daily task limit reached (${dailyLimitResult.currentCount}/${dailyLimitResult.limit})`
+        );
+      }
+
+      const newTask: Task = {
+        ...taskData,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        // Provide sensible defaults if durations are missing
+        pomodoroDuration: Number.isFinite(taskData.pomodoroDuration)
+          ? (taskData.pomodoroDuration as number)
+          : 25,
+        shortBreakDuration: Number.isFinite(taskData.shortBreakDuration)
+          ? (taskData.shortBreakDuration as number)
+          : 5,
+        longBreakDuration: Number.isFinite(taskData.longBreakDuration)
+          ? (taskData.longBreakDuration as number)
+          : 10,
+      };
+
+      const tasks = await this.getTasks();
+      tasks.push(newTask);
+
+      await this.saveTasks(tasks);
+      await this.cleanupCompletedTasks();
+
+      console.log('Task added successfully:', newTask.title);
+      return newTask;
+    } catch (error) {
+      console.error('Error adding task:', error);
+      throw error;
     }
-
-    // Check daily limit
-    const dailyLimit = await this.checkDailyLimit();
-    if (!dailyLimit.canAdd) {
-      throw new Error(
-        `Daily limit reached: ${dailyLimit.currentCount}/${dailyLimit.limit} tasks`
-      );
-    }
-
-    const tasks = await this.getTasks();
-    const newTask: Task = {
-      ...taskData,
-      id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    tasks.push(newTask);
-    await this.saveTasks(tasks);
-
-    // Auto-cleanup completed tasks to prevent storage bloat
-    await this.cleanupCompletedTasks();
-
-    return newTask;
   }
 
   // Enhanced updateTask with validation
@@ -317,7 +319,7 @@ export class TaskService {
     const updatedTask: Task = {
       ...task,
       completed: !task.completed,
-      completedAt: !task.completed ? new Date().toISOString() : null,
+      completedAt: !task.completed ? new Date().toISOString() : undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -381,12 +383,11 @@ export class TaskService {
   }
 
   static async addDailyAchievement(
-    achievement: Omit<DailyAchievement, 'id' | 'date'>
+    achievement: Omit<DailyAchievement, 'date'>
   ): Promise<DailyAchievement> {
     const achievements = await this.getDailyAchievements();
     const newAchievement: DailyAchievement = {
       ...achievement,
-      id: Date.now().toString(),
       date: new Date().toISOString(),
     };
 
@@ -402,6 +403,7 @@ export class TaskService {
   ): Promise<Task[]> {
     const tasks = await this.getTasks();
     const today = new Date().toISOString().split('T')[0];
+    const cutoff3Days = Date.now() - 3 * 24 * 60 * 60 * 1000;
 
     switch (filter) {
       case 'today':
@@ -411,210 +413,18 @@ export class TaskService {
           return taskCreatedToday || taskDueToday;
         });
       case 'pending':
-        return tasks.filter((task) => !task.completed);
+        return tasks.filter((task) => !task.completed).slice(0, 100);
       case 'completed':
-        return tasks.filter((task) => task.completed);
+        return tasks
+          .filter(
+            (task) =>
+              task.completed &&
+              task.completedAt &&
+              new Date(task.completedAt).getTime() >= cutoff3Days
+          )
+          .slice(0, 90); // up to last 3 days, capped
       default:
-        return tasks;
+        return tasks.slice(0, 100);
     }
-  }
-
-  // Initialize with sample data if no tasks exist
-  static async initializeSampleData(): Promise<void> {
-    const tasks = await this.getTasks();
-    if (tasks.length === 0) {
-      const sampleTasks: Task[] = [
-        {
-          id: '1',
-          title: 'Complete project proposal',
-          description: 'Write and submit the quarterly project proposal',
-          priority: 'High',
-          project: 'Work',
-          pomodoroCount: 4,
-          completedPomodoros: 0,
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-          reminder: new Date(
-            Date.now() + 6 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          repeat: 'none',
-          tags: ['urgent', 'proposal'],
-          attachments: [],
-          notes: 'Important for Q4 planning',
-          completed: false,
-          color: '#ef4444',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '2',
-          title: 'Learn React hooks',
-          description: 'Study advanced React hooks and patterns',
-          priority: 'Medium',
-          project: 'Study',
-          pomodoroCount: 6,
-          completedPomodoros: 2,
-          dueDate: new Date(
-            Date.now() + 14 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          reminder: new Date(
-            Date.now() + 12 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          repeat: 'weekly',
-          tags: ['react', 'learning'],
-          attachments: [],
-          notes: 'Focus on useCallback and useMemo',
-          completed: false,
-          color: '#3b82f6',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-      ];
-
-      await this.saveTasks(sampleTasks);
-    }
-  }
-
-  // Create sample analytics data for testing
-  static async createSampleAnalyticsData(): Promise<void> {
-    const tasks = await this.getTasks();
-
-    // If we already have tasks, don't create sample data
-    if (tasks.length > 0) return;
-
-    const sampleTasks: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>[] = [
-      // Today's tasks
-      {
-        title: 'Complete project proposal',
-        priority: 'high',
-        project: 'Work',
-        pomodoroCount: 4,
-        completedPomodoros: 3,
-        tags: ['urgent', 'proposal'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date().toISOString(),
-        dueDate: new Date().toISOString().split('T')[0],
-      },
-      {
-        title: 'Review code changes',
-        priority: 'medium',
-        project: 'Work',
-        pomodoroCount: 2,
-        completedPomodoros: 2,
-        tags: ['code', 'review'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date().toISOString(),
-        dueDate: new Date().toISOString().split('T')[0],
-      },
-      {
-        title: 'Plan weekly goals',
-        priority: 'low',
-        project: 'Personal',
-        pomodoroCount: 1,
-        completedPomodoros: 1,
-        tags: ['planning'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date().toISOString(),
-        dueDate: new Date().toISOString().split('T')[0],
-      },
-      // Yesterday's tasks
-      {
-        title: 'Design user interface',
-        priority: 'high',
-        project: 'Work',
-        pomodoroCount: 6,
-        completedPomodoros: 4,
-        tags: ['design', 'ui'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-      {
-        title: 'Write documentation',
-        priority: 'medium',
-        project: 'Work',
-        pomodoroCount: 3,
-        completedPomodoros: 2,
-        tags: ['documentation'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-        dueDate: new Date(Date.now() - 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-      // This week's tasks
-      {
-        title: 'Learn new framework',
-        priority: 'medium',
-        project: 'Study',
-        pomodoroCount: 8,
-        completedPomodoros: 6,
-        tags: ['learning', 'framework'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date(
-          Date.now() - 3 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        dueDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-      {
-        title: 'Exercise routine',
-        priority: 'low',
-        project: 'Personal',
-        pomodoroCount: 2,
-        completedPomodoros: 2,
-        tags: ['health', 'exercise'],
-        attachments: [],
-        completed: true,
-        completedAt: new Date(
-          Date.now() - 2 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        dueDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-      // Pending tasks
-      {
-        title: 'Finish project presentation',
-        priority: 'urgent',
-        project: 'Work',
-        pomodoroCount: 5,
-        completedPomodoros: 0,
-        tags: ['presentation', 'urgent'],
-        attachments: [],
-        completed: false,
-        dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-      {
-        title: 'Read technical book',
-        priority: 'medium',
-        project: 'Study',
-        pomodoroCount: 4,
-        completedPomodoros: 0,
-        tags: ['reading', 'technical'],
-        attachments: [],
-        completed: false,
-        dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0],
-      },
-    ];
-
-    // Add all sample tasks
-    for (const task of sampleTasks) {
-      await this.addTask(task);
-    }
-
-    console.log('Sample analytics data created successfully!');
   }
 }

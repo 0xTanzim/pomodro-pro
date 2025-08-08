@@ -5,16 +5,21 @@ interface ProjectTimeDistributionProps {
   data: ProjectTimeData[];
 }
 
-export const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = ({ data }) => {
+export const ProjectTimeDistribution: React.FC<
+  ProjectTimeDistributionProps
+> = ({ data }) => {
   const formatTime = (minutes: number): string => {
     const hours = Math.floor(minutes / 60);
     const mins = minutes % 60;
     return `${hours}h ${mins}m`;
   };
 
-  const totalTime = data.reduce((sum, item) => sum + item.totalTime, 0);
+  const totalTime = data.reduce(
+    (sum, item) => sum + (Number.isFinite(item.totalTime) ? item.totalTime : 0),
+    0
+  );
 
-  if (data.length === 0) {
+  if (data.length === 0 || totalTime <= 0) {
     return (
       <div className="text-center py-8 text-gray-500">
         <p>No project data available</p>
@@ -27,12 +32,19 @@ export const ProjectTimeDistribution: React.FC<ProjectTimeDistributionProps> = (
       {/* Donut Chart */}
       <div className="relative flex items-center justify-center">
         <div className="relative w-48 h-48">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+          <svg
+            className="w-full h-full transform -rotate-90"
+            viewBox="0 0 100 100"
+          >
             {data.map((item, index) => {
               const previousItems = data.slice(0, index);
-              const previousTotal = previousItems.reduce((sum, prevItem) => sum + prevItem.totalTime, 0);
+              const previousTotal = previousItems.reduce(
+                (sum, prevItem) => sum + prevItem.totalTime,
+                0
+              );
               const startAngle = (previousTotal / totalTime) * 360;
-              const endAngle = ((previousTotal + item.totalTime) / totalTime) * 360;
+              const endAngle =
+                ((previousTotal + item.totalTime) / totalTime) * 360;
 
               const startRadians = (startAngle * Math.PI) / 180;
               const endRadians = (endAngle * Math.PI) / 180;

@@ -204,8 +204,8 @@ describe('TaskService', () => {
         },
       ];
 
-      // Mock chrome.storage.local.get to return our test tasks
-      (chrome.storage.local.get as any).mockResolvedValue({ tasks: mockTasks });
+      // Mock chrome.storage.sync.get to return our test tasks
+      (chrome.storage.sync.get as any).mockResolvedValue({ tasks: mockTasks });
 
       const result = await TaskService.checkDailyLimit();
       expect(result.canAdd).toBe(true);
@@ -229,7 +229,7 @@ describe('TaskService', () => {
         color: '#ef4444',
       }));
 
-      (chrome.storage.local.get as any).mockResolvedValue({ tasks: mockTasks });
+      (chrome.storage.sync.get as any).mockResolvedValue({ tasks: mockTasks });
 
       const result = await TaskService.checkDailyLimit();
       expect(result.canAdd).toBe(false);
@@ -275,7 +275,7 @@ describe('TaskService', () => {
         },
       ];
 
-      (chrome.storage.local.get as any).mockResolvedValue({ tasks: mockTasks });
+      (chrome.storage.sync.get as any).mockResolvedValue({ tasks: mockTasks });
 
       const overdueTasks = await TaskService.getOverdueTasks();
       expect(overdueTasks).toHaveLength(1);
@@ -302,7 +302,7 @@ describe('TaskService', () => {
         },
       ];
 
-      (chrome.storage.local.get as any).mockResolvedValue({ tasks: mockTasks });
+      (chrome.storage.sync.get as any).mockResolvedValue({ tasks: mockTasks });
 
       const overdueTasks = await TaskService.getOverdueTasks();
       expect(overdueTasks).toHaveLength(0);
@@ -340,7 +340,7 @@ describe('TaskService', () => {
         },
       ];
 
-      (chrome.storage.local.get as any).mockResolvedValue({ tasks: mockTasks });
+      (chrome.storage.sync.get as any).mockResolvedValue({ tasks: mockTasks });
 
       const stats = await TaskService.getTaskStatistics();
       expect(stats.total).toBe(2);

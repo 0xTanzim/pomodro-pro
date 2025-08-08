@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAnalytics } from '@/features/analytics/hooks/useAnalytics';
 import { TaskList } from '@/features/tasks/components/TaskList';
 import { usePopupSize } from '@/hooks/usePopupSize';
 import { BarChart3, Clock, Settings, Target, TrendingUp } from 'lucide-react';
@@ -17,6 +18,7 @@ import React, { useState } from 'react';
 export default function App(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState('timer');
   const popupSize = usePopupSize({ isTasksActive: activeTab === 'tasks' });
+  const { summary, isLoading: analyticsLoading } = useAnalytics();
 
   const openReport = () => {
     chrome.tabs.create({ url: chrome.runtime.getURL('report.html') });
@@ -30,12 +32,19 @@ export default function App(): React.JSX.Element {
     chrome.tabs.create({ url: chrome.runtime.getURL('task.html') });
   };
 
+  // Format time for display
+  const formatTime = (minutes: number): string => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
   return (
     <div
       className="bg-background text-foreground"
       style={{
         height: `${popupSize.height}px`,
-        width: `${popupSize.width}px`
+        width: `${popupSize.width}px`,
       }}
     >
       <Card className="h-full flex flex-col">
@@ -85,9 +94,13 @@ export default function App(): React.JSX.Element {
                       <Clock className="h-4 w-4 text-blue-500" />
                       <div>
                         <div className="text-xl font-bold text-blue-600">
-                          25
+                          {analyticsLoading
+                            ? '...'
+                            : summary?.totalPomodoros || 0}
                         </div>
-                        <div className="text-xs text-gray-500">Pomodoros</div>
+                        <div className="text-xs text-gray-500">
+                          Total Pomodoros
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -96,13 +109,45 @@ export default function App(): React.JSX.Element {
                       <Target className="h-4 w-4 text-green-500" />
                       <div>
                         <div className="text-xl font-bold text-green-600">
-                          12
+                          {analyticsLoading
+                            ? '...'
+                            : summary?.tasksCompletedThisWeek || 0}
                         </div>
                         <div className="text-xs text-gray-500">Tasks Done</div>
                       </div>
                     </div>
                   </Card>
                 </div>
+
+                {/* Additional Stats */}
+                {summary && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Card className="p-3">
+                      <div className="flex items-center space-x-2">
+                        <Clock className="h-4 w-4 text-purple-500" />
+                        <div>
+                          <div className="text-lg font-bold text-purple-600">
+                            {formatTime(summary.focusTimeThisWeek)}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            Focus Time
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                    <Card className="p-3">
+                      <div className="flex items-center space-x-2">
+                        <Target className="h-4 w-4 text-orange-500" />
+                        <div>
+                          <div className="text-lg font-bold text-orange-600">
+                            {summary.tasksCompletedToday}
+                          </div>
+                          <div className="text-xs text-gray-500">Today</div>
+                        </div>
+                      </div>
+                    </Card>
+                  </div>
+                )}
 
                 {/* Quick Actions */}
                 <Card>

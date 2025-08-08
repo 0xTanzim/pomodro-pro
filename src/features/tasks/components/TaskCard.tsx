@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useTimerStore } from '@/store/timerStore';
 import {
   Calendar,
   Check,
@@ -56,6 +57,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onDelete,
   onToggleCompletion,
 }) => {
+  const { state } = useTimerStore();
+  const isActive = state?.isRunning && state.selectedTaskId === task.id;
   const getTagColor = (tag: string) => {
     return (
       TAG_COLORS[tag] ||
@@ -89,10 +92,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   };
 
   const isOverdue = () => {
-    if (!task.dueDate) return false;
-    const dueDate = new Date(task.dueDate);
+    if (!task.dueDate || task.completed) return false;
+
+    // Parse due date and get today's date in the same format
+    const dueDate = new Date(task.dueDate + 'T00:00:00'); // Set to start of day
     const today = new Date();
-    return dueDate < today && !task.completed;
+    const todayStart = new Date(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate()
+    );
+
+    // Compare dates only (ignore time)
+    return dueDate < todayStart;
   };
 
   return (
@@ -148,6 +160,13 @@ export const TaskCard: React.FC<TaskCardProps> = ({
                   {task.priority.charAt(0).toUpperCase() +
                     task.priority.slice(1)}
                 </Badge>
+
+                {isActive && (
+                  <Badge className="text-xs px-1 py-0.5 bg-green-600 text-white">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-white mr-1" />
+                    Active
+                  </Badge>
+                )}
               </div>
 
               {/* Timestamps and Pomodoro Count */}

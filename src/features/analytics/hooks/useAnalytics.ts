@@ -23,25 +23,18 @@ export const useAnalytics = () => {
   const loadReportData = async () => {
     setIsLoading(true);
     try {
-      // Initialize sample data if no tasks exist
-      await analyticsService.initializeSampleData();
+      const summary = await analyticsService.getReportSummary();
+      const projectData = await analyticsService.getProjectTimeDistribution();
+      const focusData = await analyticsService.getFocusTimeDistribution();
+      const chartData = await analyticsService.getTaskChartData(timeRange);
 
-      const [summaryData, projectData, focusData, chartData] =
-        await Promise.all([
-          analyticsService.getReportSummary(),
-          analyticsService.getProjectTimeDistribution(),
-          analyticsService.getFocusTimeDistribution(),
-          analyticsService.getTaskChartData(
-            timeRange === 'biweekly' ? 'biweekly' : 'week'
-          ),
-        ]);
-
-      setSummary(summaryData);
+      setSummary(summary);
       setProjectTimeData(projectData);
       setFocusTimeData(focusData);
       setTaskChartData(chartData);
     } catch (error) {
-      console.error('Error loading report data:', error);
+      console.error('Error loading analytics data:', error);
+      // setError('Failed to load analytics data'); // This line was removed from the new_code
     } finally {
       setIsLoading(false);
     }
@@ -52,7 +45,27 @@ export const useAnalytics = () => {
   };
 
   useEffect(() => {
-    loadReportData();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const summary = await analyticsService.getReportSummary();
+        const projectData = await analyticsService.getProjectTimeDistribution();
+        const focusData = await analyticsService.getFocusTimeDistribution();
+        const chartData = await analyticsService.getTaskChartData(timeRange);
+
+        setSummary(summary);
+        setProjectTimeData(projectData);
+        setFocusTimeData(focusData);
+        setTaskChartData(chartData);
+      } catch (error) {
+        console.error('Error loading analytics data:', error);
+        // setError('Failed to load analytics data'); // This line was removed from the new_code
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [timeRange]);
 
   return {

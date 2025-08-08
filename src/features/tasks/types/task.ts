@@ -2,20 +2,20 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  completed: boolean;
   priority: 'low' | 'medium' | 'high' | 'urgent';
   project: string;
-  dueDate?: string;
-  reminder?: string;
-  repeat?: 'none' | 'daily' | 'weekly' | 'monthly';
+  tags: string[];
   pomodoroCount: number;
   completedPomodoros: number;
-  tags: string[];
-  attachments: Attachment[];
-  notes?: string;
+  pomodoroDuration?: number; // Duration in minutes for this specific task
+  shortBreakDuration?: number; // Per-task short break in minutes
+  longBreakDuration?: number; // Per-task long break in minutes
+  completed: boolean;
   createdAt: string;
+  updatedAt: string;
   completedAt?: string;
-  color: string;
+  dueDate?: string;
+  attachments: Attachment[];
 }
 
 export interface Attachment {
