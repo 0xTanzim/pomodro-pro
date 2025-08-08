@@ -1,0 +1,293 @@
+---
+alwaysApply: true
+---
+
+# BEHAVIOUR.md - Pomodoro Pro Chrome Extension
+
+This document outlines the expected behaviors, coding standards, and collaboration guidelines for developers and IDE agents contributing to the **Pomodoro Pro Chrome Extension**, a Manifest V3 Chrome Extension built with **React**, **TypeScript**, **Tailwind CSS**, **Shadcn UI**, and **Zustand**. The goal is to ensure a consistent, high-quality, and maintainable codebase that adheres to enterprise-grade standards, fosters collaboration, and delivers a robust user experience.
+
+## Table of Contents
+
+1. [Core Principles](#core-principles)
+2. [Development Behaviors](#development-behaviors)
+3. [Code Quality and Standards](#code-quality-and-standards)
+4. [Testing Guidelines](#testing-guidelines)
+5. [Collaboration and Communication](#collaboration-and-communication)
+6. [Chrome Extension-Specific Guidelines](#chrome-extension-specific-guidelines)
+7. [Performance and Scalability](#performance-and-scalability)
+8. [Security and Compliance](#security-and-compliance)
+9. [Documentation Standards](#documentation-standards)
+10. [Troubleshooting and Debugging](#troubleshooting-and-debugging)
+
+## Core Principles
+
+As contributors to Pomodoro Pro, we adhere to the following principles to ensure engineering excellence:
+
+- **Clarity + Depth**: Write code and documentation that is simple to understand yet technically precise, enabling both new and experienced developers to contribute effectively.
+- **Enterprise Standards**: Follow patterns inspired by high-scale systems (e.g., Netflix, Google) to ensure modularity, scalability, and reliability.
+- **Mentorship Mindset**: Approach development as if mentoring a rising engineer, explaining the "why" behind decisions and trade-offs.
+- **Slow Thinking**: Take time to understand requirements, explore alternatives, and weigh trade-offs before implementing solutions.
+- **User-Centric Design**: Prioritize user experience, ensuring the extension is intuitive, performant, and reliable within Chrome's constraints.
+
+## Development Behaviors
+
+### 1. Architectural Thinking
+
+- **System Design First**: Always consider the overall architecture (e.g., background script, storage, UI) before writing code. Reference the [Pomodoro Pro Instructions](Pomodoro_Pro_Instructions.mdc) for architectural details.
+- **Modularity**: Break features into reusable components, hooks, and services under the `src/features/` directory (e.g., `timer/`, `tasks/`).
+- **Trade-Offs**: Document trade-offs in code comments or pull requests (e.g., choosing `chrome.alarms` over `setInterval` for timer reliability).
+
+### 2. Code Development
+
+- **DRY (Don't Repeat Yourself)**: Reuse existing components, hooks, or services to avoid duplication. For example, use `src/lib/chromeStorage.ts` for all storage operations.
+- **YAGNI (You Aren't Gonna Need It)**: Implement only what is required for the current feature set to avoid over-engineering.
+- **SOLID Principles**:
+  - **Single Responsibility**: Each component or service should have one purpose (e.g., `TaskService` handles task CRUD, not timer logic).
+  - **Open-Closed**: Design modules to be extensible without modification (e.g., add new task fields via interfaces).
+  - **Dependency Inversion**: Depend on abstractions (e.g., `TimerService` interface) rather than concrete implementations.
+- **File Size**: Keep files under 250 lines of code (LOC). Split large components into smaller, reusable ones (e.g., `TaskList` and `TaskCard`).
+
+### 3. Workflow
+
+- Run `pnpm dev` for development with hot reload or `pnpm run watch` for Chrome testing.
+- Test locally by loading the `dist/` folder as an unpacked extension in Chrome (`chrome://extensions/`).
+- Refresh the extension in Chrome after changes to `background.ts`.
+- Commit changes frequently with clear messages (e.g., `feat(timer): add pause functionality with chrome.alarms`).
+
+## Code Quality and Standards
+
+### 1. TypeScript
+
+- Use **strict typing** with interfaces for all data structures (e.g., `Task`, `TimerState`).
+- Avoid `any` types; use `unknown` when type is uncertain and validate before use.
+- Example:
+
+  ```typescript
+  interface Task {
+    id: string;
+    title: string;
+    priority: 'low' | 'medium' | 'high' | 'urgent';
+    // ... see src/features/tasks/types/task.ts
+  }
+  ```
+
+### 2. Styling
+
+- Use **Tailwind CSS** with **Shadcn UI** components for consistent, maintainable styling.
+- Avoid custom CSS files to reduce maintenance overhead.
+- Use compact layouts (e.g., `space-y-2`, `flex-1 overflow-y-auto`) to fit within the 600px popup height.
+- Example:
+
+  ```tsx
+  <div className="flex items-center space-x-2 p-2">
+    <span className="text-sm">{task.title}</span>
+    <Button variant="outline" size="sm">
+      Edit
+    </Button>
+  </div>
+  ```
+
+### 3. Icons
+
+- Use **Lucide React** icons for all UI icons to ensure consistency.
+- Example:
+
+  ```tsx
+  import { Play, Pause } from 'lucide-react';
+  <Button>
+    <Play size={16} />
+  </Button>;
+  ```
+
+### 4. State Management
+
+- Use **Zustand** for state management with TypeScript interfaces.
+- Sync timer state with `chrome.storage.local` via `timerStore.ts`.
+- Sync task and settings state with `chrome.storage.sync` via `taskStore.ts` and `settingsStore.ts`.
+- Example:
+
+  ```typescript
+  import { create } from 'zustand';
+  interface TimerState {
+    isRunning: boolean;
+    timeRemaining: number;
+    setTimer: (state: Partial<TimerState>) => void;
+  }
+  const useTimerStore = create<TimerState>((set) => ({
+    isRunning: false,
+    timeRemaining: 1500,
+    setTimer: (state) => set(state),
+  }));
+  ```
+
+### 5. Code Formatting
+
+- Use **Prettier** for consistent formatting and **ESLint** for code quality.
+- Run `pnpm lint` and `pnpm format` before committing.
+- Follow naming conventions: `camelCase` for variables/functions, `PascalCase` for components/types.
+
+## Testing Guidelines
+
+- **Framework**: Use **Vitest** with **React Testing Library** for unit and integration tests.
+- **Coverage**: Achieve 100% test coverage for critical paths (timer logic, task CRUD, storage operations).
+- **Mocking**: Mock Chrome APIs using `vitest-environment-jsdom` and `tests/mocks/chrome.ts`.
+- **Edge Cases**: Test for failure modes (e.g., storage quota exceeded, browser suspension).
+- **Example Test**:
+
+  ```typescript
+  import { render, screen } from '@testing-library/react';
+  import { describe, it, expect } from 'vitest';
+  import TaskCard from '../features/tasks/components/TaskCard';
+  describe('TaskCard', () => {
+    it('renders task title', () => {
+      const task = { id: '1', title: 'Test Task', priority: 'medium', project: '', pomodoroCount: 1, completedPomodoros: 0, tags: [], createdAt: '', updatedAt: '' };
+      render(<TaskCard task={task} />);
+      expect(screen.getByText('Test Task')).toBeInTheDocument();
+    });
+  });
+  ```
+
+- Run `pnpm test` before submitting pull requests to ensure all tests pass.
+
+## Collaboration and Communication
+
+- **Pull Requests**:
+  - Provide clear descriptions of changes, including the problem solved and trade-offs considered.
+  - Reference relevant issues (e.g., `Fixes #123`).
+  - Request reviews from at least one team member.
+- **Commit Messages**:
+  - Use conventional commits (e.g., `feat: add task deletion`, `fix: handle storage quota error`).
+  - Keep messages concise yet descriptive.
+- **Code Reviews**:
+  - Provide constructive feedback focusing on clarity, performance, and adherence to standards.
+  - Approve only after verifying tests pass and edge cases are handled.
+- **Issue Tracking**:
+  - Use GitHub Issues or equivalent to track bugs and features.
+  - Label issues appropriately (e.g., `bug`, `enhancement`, `priority:high`).
+
+## Chrome Extension-Specific Guidelines
+
+### 1. Popup Constraints
+
+- Optimize UI for a 600px height using `flex-1 overflow-y-auto` for scrollable content.
+- Minimize re-renders with `React.memo` and `useCallback`.
+- Example:
+
+  ```tsx
+  const TimerDisplay = React.memo(
+    ({ timeRemaining }: { timeRemaining: number }) => {
+      return <div className="text-2xl">{formatTime(timeRemaining)}</div>;
+    }
+  );
+  ```
+
+### 2. Background Script
+
+- Use `chrome.alarms` for timer logic to ensure persistence:
+
+  ```typescript
+  chrome.alarms.create('pomodoro', { periodInMinutes: 1 / 60 }); // Tick every second
+  chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === 'pomodoro') {
+      updateTimerState();
+    }
+  });
+  ```
+
+- Handle messages from the popup:
+
+  ```typescript
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'START_TIMER') {
+      startTimer(request.duration);
+      sendResponse({ success: true });
+    }
+  });
+  ```
+
+### 3. Storage Operations
+
+- Use `src/lib/chromeStorage.ts` for all storage interactions:
+
+  ```typescript
+  import { setStorageItem } from '../lib/chromeStorage';
+  async function saveTask(task: Task): Promise<void> {
+    await setStorageItem('tasks', [
+      ...(await getStorageItem<Task[]>('tasks', [])),
+      task,
+    ]);
+  }
+  ```
+
+- Handle storage errors (e.g., quota exceeded) gracefully.
+
+### 4. Vite Build
+
+- Configure multi-entry points in `vite.config.ts` for `popup`, `options`, `report`, `task`, and `background`.
+- Ensure background script is ES module-compatible for Manifest V3.
+
+## Performance and Scalability
+
+- **Storage Optimization**: Compress task data (e.g., use short keys) to stay within `chrome.storage.sync` limits (100KB per item, 8MB total).
+- **Rendering**: Use `useMemo` for expensive computations in charts (e.g., analytics data).
+- **Background Script**: Minimize CPU usage by avoiding polling; rely on `chrome.alarms`.
+- **Scalability**: Design for large task lists by paginating data in `TaskService` if needed.
+- Example:
+
+  ```typescript
+  async function getPaginatedTasks(
+    page: number,
+    limit: number
+  ): Promise<Task[]> {
+    const tasks = await getStorageItem<Task[]>('tasks', []);
+    return tasks.slice(page * limit, (page + 1) * limit);
+  }
+  ```
+
+## Security and Compliance
+
+- **Data Privacy**: Store only necessary data in `chrome.storage`. Avoid sensitive information (e.g., no user PII).
+- **Permissions**: Request minimal Chrome permissions in `manifest.json` (e.g., `storage`, `alarms`, `notifications`).
+- **Input Validation**: Sanitize all user inputs (e.g., task titles) to prevent injection attacks.
+- **Error Handling**: Gracefully handle Chrome API errors (e.g., `chrome.runtime.lastError`).
+- Example:
+
+  ```typescript
+  chrome.storage.sync.set({ tasks }, () => {
+    if (chrome.runtime.lastError) {
+      console.error('Storage error:', chrome.runtime.lastError);
+    }
+  });
+  ```
+
+## Documentation Standards
+
+- **Code Documentation**: Use **TSDoc** for TypeScript and **JSDoc** for JavaScript.
+
+  ```typescript
+  /**
+   * Pauses the active Pomodoro timer.
+   * @returns Promise resolving to true if paused successfully.
+   * @throws Error if no timer is running.
+   */
+  async function pauseTimer(): Promise<boolean> {
+    // Implementation
+  }
+  ```
+
+- **Feature Documentation**: Write user-friendly documentation for public APIs in `README.md` or feature-specific docs (e.g., `docs/tasks.md`).
+- **Changelog**: Update `CHANGELOG.md` with each release, detailing features, fixes, and breaking changes.
+
+## Troubleshooting and Debugging
+
+- **Logs**: Use `console.log` sparingly in production; prefer `console.debug` for development.
+- **Chrome DevTools**: Use the **Service Worker DevTools** (`chrome://serviceworker-internals/`) to debug `background.ts`.
+- **Common Issues**:
+  - **Timer Stops**: Check if `chrome.alarms` is registered correctly.
+  - **Storage Sync Fails**: Verify quota limits and handle errors in `chromeStorage.ts`.
+  - **UI Misalignment**: Ensure Tailwind classes respect the 600px popup height.
+- **Debugging Tip**: Add temporary logs in `background.ts` and refresh the extension to inspect behavior.
+
+## Conclusion
+
+By adhering to these behaviors, contributors ensure the **Pomodoro Pro Chrome Extension** remains a high-quality, maintainable, and user-friendly tool. Focus on modularity, testability, and Chrome-specific constraints while fostering a collaborative and mentorship-driven development process. For detailed architectural guidance, refer to the [Pomodoro Pro Instructions](Pomodoro_Pro_Instructions.mdc).

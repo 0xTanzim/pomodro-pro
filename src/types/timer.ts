@@ -1,4 +1,4 @@
-export type TimerMode = "focus" | "short_break" | "long_break";
+export type TimerMode = 'focus' | 'short_break' | 'long_break';
 
 export interface TimerState {
   time: number;
@@ -11,6 +11,9 @@ export interface TimerState {
   totalFocusTime: number;
   dailyGoal: number;
   streak: number;
+  selectedTaskId?: string | null;
+  // Stores per-task paused remaining time (in seconds) for focus sessions
+  pausedTaskTimes?: Record<string, number>;
 }
 
 export interface Todo {
@@ -36,7 +39,7 @@ export interface TimerSettings {
 export const DEFAULT_TIMER_STATE: TimerState = {
   time: 25 * 60,
   isRunning: false,
-  mode: "focus",
+  mode: 'focus',
   cycle: 0,
   todos: [],
   pomodoros: 0,
@@ -44,12 +47,13 @@ export const DEFAULT_TIMER_STATE: TimerState = {
   totalFocusTime: 0,
   dailyGoal: 8 * 60 * 60, // 8 hours in seconds
   streak: 0,
+  pausedTaskTimes: {},
 };
 
 export const DEFAULT_SETTINGS: TimerSettings = {
   focusDuration: 25 * 60,
   shortBreakDuration: 5 * 60,
-  longBreakDuration: 15 * 60,
+  longBreakDuration: 10 * 60,
   autoStartBreaks: false,
   autoStartPomodoros: false,
   notifications: true,

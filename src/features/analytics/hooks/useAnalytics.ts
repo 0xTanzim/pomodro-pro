@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnalyticsService } from '../services/analyticsService';
-import { 
-  ReportSummary, 
-  ProjectTimeData, 
-  FocusTimeEntry, 
-  TaskChartData, 
-  ReportView, 
-  TimeRange 
+import {
+  FocusTimeEntry,
+  ProjectTimeData,
+  ReportSummary,
+  ReportView,
+  TaskChartData,
+  TimeRange,
 } from '../types';
 
 export const useAnalytics = () => {
@@ -23,24 +23,18 @@ export const useAnalytics = () => {
   const loadReportData = async () => {
     setIsLoading(true);
     try {
-      const [
-        summaryData,
-        projectData,
-        focusData,
-        chartData
-      ] = await Promise.all([
-        analyticsService.getReportSummary(),
-        analyticsService.getProjectTimeDistribution(),
-        analyticsService.getFocusTimeDistribution(),
-        analyticsService.getTaskChartData(timeRange === 'biweekly' ? 'biweekly' : 'week')
-      ]);
+      const summary = await analyticsService.getReportSummary();
+      const projectData = await analyticsService.getProjectTimeDistribution();
+      const focusData = await analyticsService.getFocusTimeDistribution();
+      const chartData = await analyticsService.getTaskChartData(timeRange);
 
-      setSummary(summaryData);
+      setSummary(summary);
       setProjectTimeData(projectData);
       setFocusTimeData(focusData);
       setTaskChartData(chartData);
     } catch (error) {
-      console.error('Error loading report data:', error);
+      console.error('Error loading analytics data:', error);
+      // setError('Failed to load analytics data'); // This line was removed from the new_code
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +45,27 @@ export const useAnalytics = () => {
   };
 
   useEffect(() => {
-    loadReportData();
+    const loadData = async () => {
+      setIsLoading(true);
+      try {
+        const summary = await analyticsService.getReportSummary();
+        const projectData = await analyticsService.getProjectTimeDistribution();
+        const focusData = await analyticsService.getFocusTimeDistribution();
+        const chartData = await analyticsService.getTaskChartData(timeRange);
+
+        setSummary(summary);
+        setProjectTimeData(projectData);
+        setFocusTimeData(focusData);
+        setTaskChartData(chartData);
+      } catch (error) {
+        console.error('Error loading analytics data:', error);
+        // setError('Failed to load analytics data'); // This line was removed from the new_code
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
   }, [timeRange]);
 
   return {
@@ -66,4 +80,4 @@ export const useAnalytics = () => {
     taskChartData,
     refreshData,
   };
-}; 
+};

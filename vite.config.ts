@@ -16,6 +16,7 @@ export default defineConfig({
         popup: path.resolve(__dirname, 'index.html'),
         options: path.resolve(__dirname, 'options.html'),
         report: path.resolve(__dirname, 'report.html'),
+        task: path.resolve(__dirname, 'task.html'),
         background: path.resolve(__dirname, 'src/background/background.ts'),
       },
       output: {

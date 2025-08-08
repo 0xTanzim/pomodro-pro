@@ -3,7 +3,11 @@
 node_modules
 .env
 dist/
+/dist.zip
+
 
 /demoTodoDesign
 /demoTodoDesign
 demoTodoDesign/
+
+*.zip
